@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>雙軸智能聚攏 (Double-Axis Convergence) 視覺設計示意圖</title>
+  <style>
+    :root {
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --accent-amber: #d97706;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .header-intro {
+      background: #ffffff;
+      padding: 20px 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .header-intro h1 {
+      font-size: 1.35rem;
+      margin-bottom: 8px;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-intro p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .section-card {
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      padding: 20px 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .comparison-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .matrix-card {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .matrix-card-header {
+      padding: 12px 18px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .matrix-card-header.bad {
+      background: #fee2e2;
+      color: #991b1b;
+      border-bottom: 1px solid #fecaca;
+    }
+    .matrix-card-header.good {
+      background: #ecfdf5;
+      color: #065f46;
+      border-bottom: 1px solid #a7f3d0;
+    }
+
+    table.mock-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+    table.mock-table th, table.mock-table td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: center;
+      font-size: 0.78rem;
+    }
+    table.mock-table th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    table.mock-table th.client-col {
+      width: 170px;
+      text-align: left;
+    }
+
+    .cell-box {
+      border-radius: 6px;
+      padding: 5px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+    }
+
+    .focus-cell {
+      background: #fef3c7 !important;
+      color: #b45309 !important;
+      border: 2px solid #d97706 !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+      font-weight: 800;
+    }
+    .dimmed-cell {
+      opacity: 0.15 !important;
+      filter: grayscale(80%);
+    }
+
+    .callout-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    /* 橫向滾動容器模擬 */
+    .scroll-mock-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 2px dashed #f87171;
+      padding: 6px;
+      background: #fffaf0;
+      position: relative;
+    }
+    .scroll-hint-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px;
+      background: #fee2e2;
+      color: #b91c1c;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    /* 聚攏收折特效 */
+    .compact-table-container {
+      border: 2px solid #10b981;
+      padding: 6px;
+      background: #f0fdf4;
+    }
+    .compact-hint-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px;
+      background: #d1fae5;
+      color: #065f46;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-intro">
+    <h1>🎯 您的直覺一針見血！這正是二維大表的橫向捲動痛點！</h1>
+    <p>
+      您說得完全正確：<strong>「如果只淡化格子，整張表依然橫跨 15～20 個議題欄位，您還是必須不斷往右滑動滾輪，去翻找坐在右邊欄位的客戶！」</strong><br>
+      因此，真正極致好用的解決方案是：<strong>【雙軸智能聚攏 (Double-Axis Auto-Convergence)】</strong>！<br>
+      👉 當您選擇「🟡 洽談」時，<strong>系統自動把「完全無人洽談」的空白欄位全部收折隱藏</strong>，只留下真正有人在洽談的 3~4 個議題欄位！
+    </p>
+  </div>
+
+  <div class="comparison-grid">
+    <!-- 痛點：橫向太寬需要一直滾動 -->
+    <div class="matrix-card">
+      <div class="matrix-card-header bad">
+        <span>❌ 您的疑慮：未聚攏欄位 ➔ 橫向 15 欄超寬，必須死命往右滑動翻找！</span>
+        <span class="callout-badge" style="background:#fca5a5; color:#7f1d1d;">手動往右滑動滾動條，疲勞感依然存在</span>
+      </div>
+      <div class="scroll-hint-bar">
+        <span>👉 滾動條很長：林建宏在第 12 欄、魏銘誌在第 18 欄，必須一直往右滑才能看全！ ➔</span>
+      </div>
+      <div class="scroll-mock-container">
+        <table class="mock-table" style="min-width: 1400px;">
+          <thead>
+            <tr>
+              <th class="client-col">客戶名單</th>
+              <th style="background:#fef3c7;">LINE 聊天</th>
+              <th>車險</th>
+              <th>癌險</th>
+              <th>醫療險</th>
+              <th>實支實付</th>
+              <th>意外險</th>
+              <th>保單檢視</th>
+              <th>產險</th>
+              <th>信託傳承</th>
+              <th>稅務規劃</th>
+              <th style="background:#fef3c7;">退休理財</th>
+              <th>年金險</th>
+              <th>長照險</th>
+              <th style="background:#fef3c7;">子女教育</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="client-col"><strong>陳樂</strong></td>
+              <td><div class="cell-box focus-cell">10/04<br>洽談</div></td>
+              <td><div class="cell-box dimmed-cell">預計</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+            </tr>
+            <tr>
+              <td class="client-col"><strong>林建宏</strong></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box focus-cell">10/02<br>洽談</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+            </tr>
+            <tr>
+              <td class="client-col"><strong>魏銘誌</strong></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box focus-cell">10/04<br>洽談</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 終極解法：雙軸智能聚攏 -->
+    <div class="matrix-card">
+      <div class="matrix-card-header good">
+        <span>✨ 終極解法：【雙軸智能聚攏】➔ 無洽談的欄位「自動隱藏收折」，0 滑動、一屏全覽！</span>
+        <span class="callout-badge" style="background:#6ee7b7; color:#064e3b;">完全不需要橫向滾動！100% 緊湊聚焦</span>
+      </div>
+      <div class="compact-hint-bar">
+        <span>🎉 系統自動收折 12 個無人洽談的空白欄位！直接把命中欄位吸附聚攏到眼前！</span>
+      </div>
+      <div class="compact-table-container">
+        <table class="mock-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th class="client-col">客戶名單 (Y軸)</th>
+              <th style="background:#fef3c7; color:#92400e;">💬 LINE 聊天</th>
+              <th style="background:#fef3c7; color:#92400e;">📈 退休理財</th>
+              <th style="background:#fef3c7; color:#92400e;">🎓 子女教育</th>
+              <th style="width: 120px; background:#f1f5f9; color:#64748b;">其餘 12 欄 (已自動收折)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="client-col"><strong>陳樂</strong> <small style="color:#d97706;">(車主:陳佳瑜)</small></td>
+              <td><div class="cell-box focus-cell">10/04<br><strong>🟡 洽談中</strong></div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td style="color:#94a3b8; font-size:0.72rem;">無洽談 (已隱藏)</td>
+            </tr>
+            <tr>
+              <td class="client-col"><strong>林建宏</strong></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box focus-cell">10/02<br><strong>🟡 洽談中</strong></div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td style="color:#94a3b8; font-size:0.72rem;">無洽談 (已隱藏)</td>
+            </tr>
+            <tr>
+              <td class="client-col"><strong>魏銘誌</strong></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box dimmed-cell">＋</div></td>
+              <td><div class="cell-box focus-cell">10/04<br><strong>🟡 洽談中</strong></div></td>
+              <td style="color:#94a3b8; font-size:0.72rem;">無洽談 (已隱藏)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="padding: 12px 18px; background: #f0fdf4; font-size: 0.82rem; color: #166534; line-height: 1.5;">
+        🌟 <strong>優勢</strong>：
+        1. <strong>完全不需滑動滾輪</strong>：無論原本欄位排得多遠，選了「洽談」，畫面上只留下這 3 欄，剛好塞滿單一螢幕！<br>
+        2. <strong>取消篩選即秒回全貌</strong>：選單切回「全部狀態」時，立刻展開原本全部 15 欄，完整不失真！
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

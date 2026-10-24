@@ -1,0 +1,132 @@
+{
+  "name": "【案件小秘書】定聯與關注案件每日推播工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 6,7,8,10 * * *"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 9,12,13,15,17,18,19,20,21,22 * * *"
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "多時段排程推播",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://script.google.com/macros/s/YOUR_GAS_DEPLOYMENT_ID/exec?type=all",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          }
+        }
+      },
+      "id": "2",
+      "name": "從 Google Sheets 撈取名單",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst contacts = data.contacts || [];\nconst touchpoints = data.touchpoints || {};\nconst topics = (data.topics || []).reduce((acc, t) => { acc[t.id] = t.title; return acc; }, {});\n\n// 強制鎖定台灣時區 (Asia/Taipei UTC+8)，徹底杜絕伺服器/Docker UTC 時差\nconst twDateStr = new Date().toLocaleString(\"en-US\", { timeZone: \"Asia/Taipei\" });\nconst now = new Date(twDateStr);\nconst currentHour = now.getHours();\nconst pad = n => String(n).padStart(2, \"0\");\nconst timeStr = `${pad(currentHour)}:${pad(now.getMinutes())}`;\n\nconst STAGE_MAP = {\n  'planned': '🟣 預計',\n  'interaction': '🟡 互動',\n  'pitched': '🔵 拋出',\n  'agreed': '🟢 同意',\n  'appointment': '🗓️ 約定',\n  'in_progress': '🟠 洽談',\n  'preparing': '🟣 籌劃',\n  'considering': '💠 考慮',\n  'closed': '🟢 完成',\n  'paused': '⚪ 暫緩',\n  'rejected': '🔴 婉拒',\n  'referral': '🤝 轉介'\n};\n\nconst getDaysDiff = (dateStr) => {\n  if (!dateStr) return 999;\n  const d = new Date(dateStr);\n  if (isNaN(d.getTime())) return 999;\n  return Math.floor((now - d) / (1000 * 60 * 60 * 24));\n};\n\nconst getCooldownThreshold = (category) => {\n  const cat = category || '';\n  if (/董座|總經理|企業主|竹科|新貴|合夥/i.test(cat)) return 30;\n  if (/親人|退休|一般緣故/i.test(cat)) return 90;\n  return 60;\n};\n\nconst items = contacts.map(c => {\n  const cid = c.id;\n  const isFoc = c.isFocused === true || c.isFocused === 'true' || c.isFocused === 'TRUE';\n  const isCtrl = c.isControlled === true || c.isControlled === 'true' || c.isControlled === 'TRUE';\n  const days = getDaysDiff(c.lastContactDate);\n  const cooldownTarget = getCooldownThreshold(c.category);\n  \n  const list = Object.values(touchpoints).filter(v => v && v.contactId === cid && v.latestDate);\n  list.sort((a, b) => new Date(b.latestDate) - new Date(a.latestDate));\n  \n  let stageLabel = '尚未定聯';\n  let topicTitle = '無';\n  let nextAction = '';\n  let rawStatus = '';\n  let isCooling = false;\n  \n  if (list.length > 0) {\n    const top = list[0];\n    rawStatus = top.status || '';\n    stageLabel = STAGE_MAP[top.status] || top.status || '紀錄';\n    topicTitle = topics[top.topicId] || '自選議題';\n    \n    if (rawStatus === 'closed' && days < cooldownTarget) {\n      isCooling = true;\n    }\n    \n    for (const h of (top.history || [])) {\n      if (h.nextAction && h.nextAction.trim()) {\n        nextAction = h.nextAction.trim();\n        break;\n      }\n    }\n  }\n  \n  if (!nextAction) {\n    if (days >= 999) nextAction = '發起日常破冰關懷';\n    else if (['appointment', 'in_progress'].includes(rawStatus)) nextAction = '準備會談說帖與試算表';\n    else if (['pitched', 'considering'].includes(rawStatus)) nextAction = '追蹤反饋與痛點';\n    else nextAction = '排定下次定聯話題';\n  }\n  \n  return {\n    name: c.name,\n    category: c.category || '客戶',\n    isFoc,\n    isCtrl,\n    days,\n    stageLabel,\n    topicTitle,\n    rawStatus,\n    nextAction,\n    isCooling,\n    cooldownTarget\n  };\n});\n\nconst activePool = items.filter(i => i.isCtrl || i.isFoc || !i.isCooling);\n\nlet timeSlotTitle = '';\nlet pushList = [];\n\nif (currentHour >= 6 && currentHour <= 9) {\n  timeSlotTitle = '🌅 晨間戰略 Focus';\n  const focusItems = activePool.filter(i => i.isCtrl || i.isFoc).slice(0, 2);\n  const appointments = activePool.filter(i => !i.isCtrl && !i.isFoc && ['appointment', 'in_progress'].includes(i.rawStatus)).slice(0, 2);\n  pushList = [...focusItems, ...appointments].slice(0, 3);\n  if (pushList.length === 0) pushList = activePool.slice(0, 2);\n} else if (currentHour >= 10 && currentHour <= 17) {\n  timeSlotTitle = '⚡ 白天行動推進';\n  const focusItems = activePool.filter(i => i.isCtrl || i.isFoc).slice(0, 1);\n  const inProgress = activePool.filter(i => !i.isCtrl && !i.isFoc && ['appointment', 'in_progress', 'pitched', 'preparing'].includes(i.rawStatus)).slice(0, 2);\n  pushList = [...focusItems, ...inProgress].slice(0, 3);\n  if (pushList.length === 0) pushList = activePool.slice(0, 2);\n} else {\n  timeSlotTitle = '🌙 晚間破冰關懷';\n  const overdue = activePool.filter(i => !i.isCtrl && !i.isFoc && i.days >= i.cooldownTarget)\n    .sort((a, b) => b.days - a.days)\n    .slice(0, 2);\n  const focusItems = activePool.filter(i => i.isCtrl || i.isFoc).slice(0, 1);\n  pushList = [...focusItems, ...overdue].slice(0, 3);\n  if (pushList.length === 0) pushList = activePool.slice(0, 2);\n}\n\nlet msg = `<b>${timeSlotTitle} (${timeStr})</b>\\n\\n`;\n\npushList.forEach(item => {\n  const tag = item.isCtrl ? '🚨 ' : (item.isFoc ? '⭐ ' : (['appointment', 'in_progress'].includes(item.rawStatus) ? '🔥 ' : '💬 '));\n  const dayDesc = item.days >= 999 ? '久未聯' : `${item.days}天`;\n  msg += `${tag}<b>${item.name}</b> (${dayDesc})\\n`;\n  msg += `  ├ <b>推進階段</b>：${item.stageLabel}\\n`;\n  msg += `  ├ <b>連結議題</b>：【${item.topicTitle}】\\n`;\n  msg += `  └ <b>行動指令</b>：${item.nextAction.slice(0, 24)}\\n\\n`;\n});\n\nmsg += `👉 <a href=\"http://localhost:5678\">打開畫布推進</a>`;\n\nreturn [{ json: { messageText: msg } }];"
+      },
+      "id": "3",
+      "name": "ADHD 極簡格式過濾",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8662081689:AAFXqe-4KSR7L0ZyLESpniSJ2CjjVRjBM0Y/sendMessage",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "8195097183"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.messageText }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "HTML"
+            }
+          ]
+        }
+      },
+      "id": "4",
+      "name": "推播至總監 Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        860,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "多時段排程推播": {
+      "main": [
+        [
+          {
+            "node": "從 Google Sheets 撈取名單",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "從 Google Sheets 撈取名單": {
+      "main": [
+        [
+          {
+            "node": "ADHD 極簡格式過濾",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ADHD 極簡格式過濾": {
+      "main": [
+        [
+          {
+            "node": "推播至總監 Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "timezone": "Asia/Taipei"
+  }
+}

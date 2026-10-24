@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>定聯 x 議題 x 案件｜紀錄管理系統</title>
+  <link rel="stylesheet" href="style.css?v=20261017_demo_masked_v9">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2242%22 fill=%22%234e6e58%22/></svg>">
+</head>
+<body>
+  <div class="app-container">
+    <!-- ====================================================================
+         1. 頂部導航與指標列 (Top Header)
+         ==================================================================== -->
+    <header class="top-header">
+      <div class="brand-section">
+        <div class="brand-title-group">
+          <h1 id="appBrandTitle" class="brand-title sync-pending" title="定聯 x 議題 x 案件｜紀錄管理系統 (同步狀態讀取中，點擊開啟設定)">定聯 x 議題 x 案件｜紀錄管理系統</h1>
+        </div>
+      </div>
+
+      <!-- 成就感推進足跡 HUD (ADHD 正向微步回饋) -->
+      <div class="pulse-stats-hud" id="pulseStatsHud" title="點擊查看本週足跡統計" onclick="window.openWeeklyPulseModal && window.openWeeklyPulseModal()">
+        <div class="pulse-hud-card today-pulse" id="btnOpenWeeklyPulseModal" onclick="window.openWeeklyPulseModal && window.openWeeklyPulseModal(); event.stopPropagation();">
+          <span class="pulse-flame-icon">🔥</span>
+          <span class="pulse-hud-label">今日微步</span>
+          <span class="pulse-hud-badge total-badge" id="hudTodayTotal">0</span>
+          <span class="pulse-hud-divider"></span>
+          <span class="pulse-mini-item" title="今日新增名單"><span class="mini-icon">👤</span><span id="hudTodayNewContact">0</span></span>
+          <span class="pulse-mini-item" title="今日更新推進"><span class="mini-icon">🚀</span><span id="hudTodayProgress">0</span></span>
+        </div>
+        <div class="pulse-hud-card week-pulse" title="本週累積推進動作" onclick="window.openWeeklyPulseModal && window.openWeeklyPulseModal(); event.stopPropagation();">
+          <span class="pulse-calendar-icon">📅</span>
+          <span class="pulse-hud-label">本週累計</span>
+          <span class="pulse-hud-badge week-badge" id="hudWeekTotal">0</span>
+        </div>
+      </div>
+
+
+      <!-- 頂部操作按鈕 (原新增名單已整合至左上角交匯儲存格，避免視覺雜訊) -->
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="btnOpenWorkLogModal" onclick="window.openWorkLogModal && window.openWorkLogModal()" title="開啟工作日誌紀錄與速記 (左側清單 / 右側編輯)">
+          <span style="font-size: 0.95rem;">📝</span>
+          <span>工作日誌</span>
+        </button>
+        <button class="btn btn-secondary" id="btnOpenRemindersModal" onclick="window.openRemindersModal && window.openRemindersModal()" title="開啟全域備忘提醒維護清單 (誰、事項、截止時程、完成)">
+          <span style="font-size: 0.95rem;">🔔</span>
+          <span>備忘提醒</span>
+          <span class="reminders-count-badge" id="headerRemindersCountBadge" style="display: none;">0</span>
+        </button>
+        <button class="btn btn-secondary" id="btnOpenStatusListModal" title="開啟推進狀況彙總清單 (掌控各客戶議題進度)">
+          <span style="font-size: 0.95rem;">📊</span>
+          <span>推進清單</span>
+        </button>
+        <button class="btn btn-secondary" id="btnOpenToolsModal" title="開啟實用工具清單地圖">
+          <span>🛠️ 工具清單</span>
+        </button>
+        
+        <!-- 下拉式選單：合併「雲端同步」、「備份 / 匯出」與「深色模式」 -->
+        <div class="header-dropdown-wrapper" id="systemSettingsDropdown">
+          <button type="button" class="btn btn-secondary dropdown-trigger-btn" id="btnToggleSettingsMenu" title="系統設定與資料備份">
+            <span>⚙️ 設定</span>
+            <span class="dropdown-caret">▾</span>
+          </button>
+          <div class="header-dropdown-menu" id="systemSettingsMenu">
+            <button type="button" class="dropdown-item-btn" id="btnOpenSyncModal" title="設定 Google Sheets 雲端連動">
+              <span class="item-icon">☁️</span>
+              <span>雲端同步</span>
+              <span id="syncStatusDot" class="status-dot offline" style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #64748b; margin-left: auto;"></span>
+            </button>
+            <button type="button" class="dropdown-item-btn" id="btnOpenBackupModal" title="備份與匯出入 JSON">
+              <span class="item-icon">💾</span>
+              <span>備份 / 匯出</span>
+            </button>
+            <button type="button" class="dropdown-item-btn" id="btnToggleTheme" title="切換深色/明亮外觀">
+              <span class="item-icon">🌓</span>
+              <span id="themeToggleText">深色模式</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         2. 控制與多維篩選列 (Control Toolbar - 三段式對齊架構)
+         左側：搜尋欄位 (置左)
+         中間：議題分類群組 (置中)
+         右側：推進狀況 + 互動篩選 (四按鈕群組，置右)
+         ==================================================================== -->
+    <div class="toolbar-section">
+
+      <!-- 左側群組：搜尋欄位 (維持置左) -->
+      <div class="toolbar-left-group">
+        <div class="search-container">
+          <div class="search-box integrated-search-box">
+            <div class="search-scope-group" id="searchScopeGroup" role="group" aria-label="搜尋範疇">
+              <button type="button" class="scope-pill-btn" data-scope="TOPIC" title="依【議題】搜尋">議題</button>
+              <button type="button" class="scope-pill-btn" data-scope="CONTACT" title="依【名單】搜尋">名單</button>
+            </div>
+            <input type="text" id="contactSearchInput" class="search-input" placeholder="搜尋..." autocomplete="off">
+            <button class="search-clear" id="searchClearBtn" title="清除搜尋文字">&times;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中間群組：議題分類 (置中) -->
+      <div class="toolbar-center-group">
+        <div class="filter-tabs" id="topicCategoryTabs">
+          <button class="filter-tab" data-category="身份接觸" title="點擊篩選【身份接觸】議題，再次點擊還原全部議題">身份接觸</button>
+          <button class="filter-tab" data-category="風險管控" title="點擊篩選【風險管控】議題，再次點擊還原全部議題">風險管控</button>
+          <button class="filter-tab" data-category="投資理財" title="點擊篩選【投資理財】議題，再次點擊還原全部議題">投資理財</button>
+          <button class="filter-tab" data-category="稅務傳承" title="點擊篩選【稅務傳承】議題，再次點擊還原全部議題">稅務傳承</button>
+          <button class="filter-tab" data-category="生活議題" title="點擊篩選【生活議題】議題，再次點擊還原全部議題">生活議題</button>
+          <button class="filter-tab" data-category="組織發展" title="點擊篩選【組織發展】議題，再次點擊還原全部議題">組織發展</button>
+        </div>
+      </div>
+
+      <!-- 右側群組：四個按鈕功能 (推進狀況篩選 + 互動篩選，整體一個群組，置右) -->
+      <div class="toolbar-right-group">
+        <!-- 推進狀況篩選下拉選單 -->
+        <div class="status-filter-wrapper">
+          <select id="touchpointStatusFilter" class="status-filter-select" title="依照推進狀況篩選客戶與自動雙軸聚攏議題">
+            <option value="ALL">推進狀況：全部</option>
+            <option value="planned">⚪ 預計</option>
+            <option value="interaction">🟡 互動</option>
+            <option value="pitched">🔵 拋出</option>
+            <option value="agreed">🟢 同意</option>
+            <option value="appointment">🗓️ 約定</option>
+            <option value="in_progress">🟠 洽談</option>
+            <option value="preparing">🟣 籌劃</option>
+            <option value="considering">💠 考慮</option>
+            <option value="closed">✅ 完成</option>
+            <option value="paused">⏸️ 暫緩</option>
+            <option value="rejected">🔴 婉拒</option>
+            <option value="referral">🤝 轉介</option>
+          </select>
+        </div>
+
+        <!-- 定聯健康度溫層篩選 (互動篩選：全名單、逾30天未聯、7天內互動、⭐ 關注) -->
+        <div class="aging-filter-group" id="agingFilterGroup">
+          <button class="aging-chip active" data-aging="ALL" id="btnFilterAll" title="點擊顯示全名單&#10;💡 連續點擊兩下：切換【Demo 去識別化模式】">全名單</button>
+          <button class="aging-chip" data-aging="FOCUS" id="btnFilterFocus" title="一鍵篩選：僅顯示【⭐ 關注】重點名單">⭐ 關注 <span id="focusCountBadge" style="opacity: 0.85; font-size: 0.72rem;">(0)</span></button>
+          <button class="aging-chip" data-aging="AGING_30">逾 30 天未聯</button>
+          <button class="aging-chip" data-aging="RECENT_7">7 天內互動</button>
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ====================================================================
+         3. 二維定聯交匯矩陣 (2D Sticky Matrix Table)
+         ==================================================================== -->
+    <main class="matrix-container" id="matrixContainer">
+      <table class="matrix-table" id="matrixTable">
+        <thead id="matrixThead">
+          <!-- 動態渲染 Sticky 頂部欄 -->
+        </thead>
+        <tbody id="matrixTbody">
+          <!-- 動態渲染 Sticky 名單列與交匯單元格 -->
+        </tbody>
+      </table>
+    </main>
+  </div>
+
+  <!-- ====================================================================
+       4. 右側微紀錄抽屜 (Quick Log Drawer)
+       ==================================================================== -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+  <aside class="slide-drawer" id="quickLogDrawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="drawer-header-info">
+        <div class="drawer-header-title">
+          <span id="logClientName">客戶姓名</span>
+          <span class="contact-category" id="logClientCategory">客群</span>
+          <span id="logClientTraits" style="display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;"></span>
+        </div>
+        <div class="drawer-header-subtitle">
+          <strong id="logTopicTitle">議題名稱</strong>
+        </div>
+      </div>
+      <div class="drawer-header-actions" style="display: flex; align-items: center; gap: 8px;">
+        <button type="button" class="btn btn-secondary btn-drawer-schedule" id="btnDrawerScheduleQuickBtn" style="display: none;" title="快速檢視此準增員學生之課表與空堂作息 (Esc關閉)">
+          <span>🎓 查看課表</span>
+        </button>
+        <button type="button" class="btn btn-secondary" id="btnDrawerBackToStatusList" style="display: none; font-size: 0.76rem; padding: 4px 10px; border-radius: var(--radius-sm); color: var(--accent-primary); border-color: var(--accent-primary); font-weight: 600;" title="關閉抽屜並返回推進狀況彙總清單 (Esc)">
+          <span>← 返回推進清單</span>
+        </button>
+        <button class="drawer-close-btn" id="closeLogDrawerBtn" title="關閉 (Esc)">&times;</button>
+      </div>
+    </div>
+
+    <div class="drawer-body drawer-split-layout drawer-three-column-layout">
+      <!-- 1. 最左側專屬備忘提醒側欄 (針對此議題設定特定時間要完成之任務) -->
+      <div class="drawer-split-sidebar-left reminder-sidebar-panel">
+        <div class="reminder-sidebar-header">
+          <div class="reminder-sidebar-title-row">
+            <span class="reminder-sidebar-icon">🔔</span>
+            <span class="reminder-sidebar-title">此議題待辦備忘</span>
+            <span class="reminder-sidebar-badge" id="topicRemindersCountBadge">0</span>
+          </div>
+          <p class="reminder-sidebar-sub">顧問個人待辦時程（如：備資料、傳訊息）</p>
+        </div>
+
+        <!-- 新增備忘小卡 -->
+        <div class="reminder-quick-add-card">
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label class="form-label" for="newReminderContent" style="font-size: 0.76rem; font-weight: 700;">要做的事情</label>
+            <textarea id="newReminderContent" class="form-control" rows="2" placeholder="例：下週三前傳送自費標靶比較表給客戶...（留空自動帶入推進此議題）" style="font-size: 0.78rem; resize: vertical;"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" for="newReminderDueTime" style="font-size: 0.76rem; font-weight: 700;">什麼時候要完成</label>
+            <input type="datetime-local" id="newReminderDueTime" class="form-control" style="font-size: 0.78rem; padding: 5px 8px;">
+          </div>
+          <button type="button" class="btn btn-primary" id="btnSaveTopicReminder" style="width: 100%; justify-content: center; font-size: 0.78rem; padding: 7px 10px; font-weight: 700;">
+            <span>＋ 加入待辦備忘</span>
+          </button>
+          <div style="font-size: 0.69rem; color: var(--text-muted); margin-top: 6px; line-height: 1.35; text-align: center;">
+            🤝 若是與客戶約定碰面，請在右側設定「約定見面／交付時間」
+          </div>
+        </div>
+
+        <!-- 該議題目前的備忘待辦清單 -->
+        <div class="reminder-items-wrapper">
+          <div class="reminder-items-header">
+            <span style="font-size: 0.74rem; font-weight: 700; color: var(--text-muted);">待辦與時程清單</span>
+          </div>
+          <div class="reminder-items-list" id="topicRemindersList">
+            <!-- 由 JS 動態渲染卡片 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 中間欄：說帖 + 填寫表單 (原左欄) -->
+      <div class="drawer-split-left drawer-split-center">
+        <!-- 該議題專屬 UMBC 切入說帖小抄 -->
+        <div class="topic-script-card">
+          <div class="script-card-header">
+            <span>UMBC 切入說帖</span>
+            <button class="script-card-copy-btn" id="btnCopyScript">複製話術</button>
+          </div>
+          <p class="script-card-content" id="logTopicScript">說帖內容加載中...</p>
+        </div>
+
+        <!-- 極速填寫區塊 (三秒微紀錄) -->
+        <form class="log-form-card" id="quickLogForm">
+          <!-- ✈️ 出國旅遊專屬動態追蹤卡 (僅在「出國旅遊」議題時動態展開) -->
+          <div id="travelInfoSection" class="travel-tracking-card" style="display: none;">
+            <div class="travel-card-header">
+              <div class="travel-header-title">
+                <span class="travel-icon">✈️</span>
+                <span class="travel-title-text">出國旅遊行程與四大業務任務追蹤</span>
+              </div>
+              <span id="travelDurationBadge" class="travel-duration-badge" style="display: none;"></span>
+            </div>
+
+            <!-- 💬 專屬旅平投保確認訊息卡片 (含一鍵複製) -->
+            <div id="travelCustomConfirmBox" class="travel-confirm-box" style="display: none;">
+              <div class="travel-confirm-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: var(--accent-primary); display: flex; align-items: center; gap: 5px;">
+                  <span>💬 旅平投保確認訊息（已套用專屬範本）</span>
+                </span>
+                <button type="button" class="btn btn-primary" id="btnCopyTravelCustomConfirm" style="padding: 2px 10px; font-size: 0.72rem; font-weight: 700;">
+                  📋 一鍵複製發 LINE
+                </button>
+              </div>
+              <div id="travelCustomConfirmText" class="travel-confirm-text" title="點選此區塊一鍵複製"></div>
+            </div>
+
+            <!-- 目的地國家與快捷標籤 -->
+            <div class="form-group" style="margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label class="form-label" for="travelDestinationInput" style="margin-bottom: 0;">目的地國家 / 地點</label>
+                <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal;">點擊標籤秒填</span>
+              </div>
+              <div class="travel-quick-destinations" id="travelQuickDestinations" style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px;">
+                <button type="button" class="travel-chip-btn" data-dest="日本">🇯🇵 日本</button>
+                <button type="button" class="travel-chip-btn" data-dest="泰國">🇹🇭 泰國</button>
+                <button type="button" class="travel-chip-btn" data-dest="韓國">🇰🇷 韓國</button>
+                <button type="button" class="travel-chip-btn" data-dest="越南">🇻🇳 越南</button>
+                <button type="button" class="travel-chip-btn" data-dest="歐洲">🇪🇺 歐洲</button>
+                <button type="button" class="travel-chip-btn" data-dest="美國">🇺🇸 美國</button>
+                <button type="button" class="travel-chip-btn" data-dest="港澳大陸">🇨🇳 港澳大陸</button>
+              </div>
+              <input type="text" id="travelDestinationInput" class="form-control" placeholder="例：日本東京、泰國清邁、法國巴黎...">
+            </div>
+
+            <!-- 旅遊起訖日期與時間 (縱向清晰排列，給予完整操作寬度，徹底消除並排破框) -->
+            <div class="travel-datetime-group" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+              <div class="form-group" style="width: 100%;">
+                <label class="form-label" for="travelDepartureInput">🛫 出發日期與時間</label>
+                <input type="datetime-local" id="travelDepartureInput" class="form-control" style="width: 100%;">
+              </div>
+              <div class="form-group" style="width: 100%;">
+                <label class="form-label" for="travelReturnInput">🛬 回國日期與時間</label>
+                <input type="datetime-local" id="travelReturnInput" class="form-control" style="width: 100%;">
+              </div>
+            </div>
+
+            <!-- 智能行程狀態提示 Banner (即時倒數與回國提示) -->
+            <div id="travelSmartStatusBanner" class="travel-smart-banner" style="display: none;"></div>
+
+            <!-- 核心業務 4 大關鍵任務檢核晶片 (Action Badges) -->
+            <div class="travel-tasks-container">
+              <div class="travel-tasks-header">
+                <span class="tasks-title">🎯 出國前後四大業務任務追蹤</span>
+                <span class="tasks-hint">點擊切換狀態</span>
+              </div>
+              <div class="travel-tasks-grid" id="travelTasksGrid">
+                <!-- 1. 辦旅平卡 -->
+                <button type="button" class="travel-task-pill" id="taskPillCard" data-task="card" data-state="none">
+                  <span class="task-icon">💳</span>
+                  <div class="task-info">
+                    <span class="task-name">辦旅平卡</span>
+                    <span class="task-status-text" id="taskStatusTextCard">未申辦</span>
+                  </div>
+                </button>
+
+                <!-- 2. 提醒要投保 -->
+                <button type="button" class="travel-task-pill" id="taskPillInsurance" data-task="insurance" data-state="none">
+                  <span class="task-icon">🛡️</span>
+                  <div class="task-info">
+                    <span class="task-name">提醒要投保</span>
+                    <span class="task-status-text" id="taskStatusTextInsurance">未提醒</span>
+                  </div>
+                </button>
+
+                <!-- 3. 權益告知 -->
+                <button type="button" class="travel-task-pill" id="taskPillRights" data-task="rights" data-state="none">
+                  <span class="task-icon">📜</span>
+                  <div class="task-info">
+                    <span class="task-name">權益告知</span>
+                    <span class="task-status-text" id="taskStatusTextRights">未告知</span>
+                  </div>
+                </button>
+
+                <!-- 4. 提醒客戶回國 -->
+                <button type="button" class="travel-task-pill" id="taskPillReturn" data-task="return" data-state="none">
+                  <span class="task-icon">🛬</span>
+                  <div class="task-info">
+                    <span class="task-name">提醒回國關懷</span>
+                    <span class="task-status-text" id="taskStatusTextReturn">旅程籌劃中</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- 智能話術一鍵自動填入輔助按鈕 -->
+            <div class="travel-auto-fill-bar">
+              <span style="font-size: 0.72rem; color: var(--text-muted);">快速填寫備忘：</span>
+              <button type="button" class="travel-autotext-btn" id="btnAutoTextPreTravel">✈️ 出發前投保叮嚀</button>
+              <button type="button" class="travel-autotext-btn" id="btnAutoTextPostTravel">🛬 回國暖心關懷問候</button>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="logDateInput">互動日期</label>
+              <input type="date" id="logDateInput" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="logChannelSelect">接觸管道</label>
+              <select id="logChannelSelect" class="form-control">
+                <option value="LINE">LINE 訊息</option>
+                <option value="電話簡聊">電話簡聊</option>
+                <option value="面對面會談">面對面會談</option>
+                <option value="咖啡隨聊">咖啡隨聊</option>
+                <option value="寄送專屬素材">寄送專屬素材</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 狀態單選群 (預計、互動、拋出、同意、約定、洽談、籌劃、考慮、完成、暫緩、婉拒、轉介) -->
+          <div class="form-group">
+            <label class="form-label">推進狀態</label>
+            <div class="status-radio-group">
+              <label class="status-radio-label" data-status="planned">
+                <input type="radio" name="touchStatus" value="planned">
+                <span>預計</span>
+              </label>
+              <label class="status-radio-label" data-status="interaction">
+                <input type="radio" name="touchStatus" value="interaction">
+                <span>互動</span>
+              </label>
+              <label class="status-radio-label" data-status="pitched">
+                <input type="radio" name="touchStatus" value="pitched">
+                <span>拋出</span>
+              </label>
+              <label class="status-radio-label" data-status="agreed">
+                <input type="radio" name="touchStatus" value="agreed">
+                <span>同意</span>
+              </label>
+              <label class="status-radio-label" data-status="appointment">
+                <input type="radio" name="touchStatus" value="appointment">
+                <span>約定</span>
+              </label>
+              <label class="status-radio-label checked" data-status="in_progress">
+                <input type="radio" name="touchStatus" value="in_progress" checked>
+                <span>洽談</span>
+              </label>
+              <label class="status-radio-label" data-status="preparing">
+                <input type="radio" name="touchStatus" value="preparing">
+                <span>籌劃</span>
+              </label>
+              <label class="status-radio-label" data-status="considering">
+                <input type="radio" name="touchStatus" value="considering">
+                <span>考慮</span>
+              </label>
+              <label class="status-radio-label" data-status="closed">
+                <input type="radio" name="touchStatus" value="closed">
+                <span>完成</span>
+              </label>
+              <label class="status-radio-label" data-status="paused">
+                <input type="radio" name="touchStatus" value="paused">
+                <span>暫緩</span>
+              </label>
+              <label class="status-radio-label" data-status="rejected">
+                <input type="radio" name="touchStatus" value="rejected">
+                <span>婉拒</span>
+              </label>
+              <label class="status-radio-label" data-status="referral">
+                <input type="radio" name="touchStatus" value="referral">
+                <span>轉介</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 📅 時程排定與提醒設定：提醒對方 / 約定見面或交付 -->
+          <div class="form-group schedule-time-box">
+            <div class="schedule-time-header">
+              <span class="schedule-time-title">📅 時程排定與提醒設定 <span class="schedule-time-sub">(選填)</span></span>
+            </div>
+            <div class="schedule-time-grid">
+              <!-- 欄位 1：提醒對方 -->
+              <div class="schedule-time-col">
+                <div class="schedule-time-label-row">
+                  <label class="form-label" for="logRemindClientTimeInput">🔔 提醒對方 (繳交資料等)</label>
+                  <button type="button" class="btn-clear-schedule-time" data-target="logRemindClientTimeInput" title="清除此時間">✕ 清除</button>
+                </div>
+                <input type="datetime-local" id="logRemindClientTimeInput" class="form-control schedule-datetime-input">
+              </div>
+
+              <!-- 欄位 2：約定見面 / 交付 -->
+              <div class="schedule-time-col">
+                <div class="schedule-time-label-row">
+                  <label class="form-label" for="logAppointmentTimeInput">🤝 約定見面／交付時間</label>
+                  <button type="button" class="btn-clear-schedule-time" data-target="logAppointmentTimeInput" title="清除此時間">✕ 清除</button>
+                </div>
+                <input type="datetime-local" id="logAppointmentTimeInput" class="form-control schedule-datetime-input">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="logSummaryInput">溝通重點與客戶回饋</label>
+            <textarea id="logSummaryInput" class="form-control" placeholder="請填寫本次定聯洽談要點、客戶真實想法與回饋..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label class="form-label" for="logNextActionInput" style="margin-bottom: 0;">下一步跟進動作</label>
+              <span id="drawerSelectedNextTopicNotice" style="font-size: 0.72rem; color: #7c3aed; font-weight: 700; display: none;"></span>
+            </div>
+            <!-- 常用下一步快速標籤 -->
+            <div class="quick-chips-container" id="actionQuickChips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+              <button type="button" class="quick-chip" data-text="下週電話簡聊核對重點">下週電話</button>
+              <button type="button" class="quick-chip" data-text="準備一頁式試算表與保障對照">備試算表</button>
+              <button type="button" class="quick-chip" data-text="約定咖啡會談面對面深聊">約咖啡面聊</button>
+              <button type="button" class="quick-chip" data-text="下個月節慶/換季時再行暖身關懷">下月再關懷</button>
+            </div>
+            <input type="text" id="logNextActionInput" class="form-control" placeholder="點擊上方標籤、下方全地圖清單，或手動自訂跟進動作">
+
+            <!-- 🗺️ 全地圖議題戰略盤點（大按鈕叫出大畫面） -->
+            <div style="margin-top: 10px;">
+              <div role="button" tabindex="0" id="btnOpenStrategyMapDrawer" class="btn-drawer-strategy-hero" title="開啟大畫面全地圖議題戰略看板">
+                <div class="strategy-hero-left">
+                  <span class="strategy-hero-icon">🗺️</span>
+                  <div class="strategy-hero-texts">
+                    <span class="strategy-hero-title">全地圖議題推進戰略看板</span>
+                    <span class="strategy-hero-desc" id="drawerSelectedNextTopicNotice">點擊開啟大畫面全景清單，挑選下一個推進議題</span>
+                  </div>
+                </div>
+                <div class="strategy-hero-right">
+                  <span class="strategy-hero-badge" id="drawerSelectedNextTopicBadge" style="display: none;">已選定</span>
+                  <button type="button" id="btnClearNextPlannedTopic" class="strategy-hero-clear" style="display: none;" title="取消選取的議題">✕</button>
+                  <span class="strategy-hero-arrow">➔</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🎙️ 會談錄音逐字稿 / AI 摘要收納區 (選用展開) -->
+          <details class="log-form-card" style="margin-top: 4px; margin-bottom: 12px; border: 1px dashed var(--border-subtle); padding: 8px 12px; border-radius: var(--radius-sm);">
+            <summary style="cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); user-select: none;">
+              🎙️ 展開貼入會談錄音逐字稿 / AI 深度摘要 (選用)
+            </summary>
+            <div style="margin-top: 8px;">
+              <textarea id="logTranscriptInput" class="form-control" placeholder="可貼入本地 AI 轉出的逐字稿全文或訪談重點摘要，日後隨時於時間軸調閱..." style="min-height: 80px; font-size: 0.78rem; font-family: monospace;"></textarea>
+            </div>
+          </details>
+
+          <button type="submit" class="btn btn-primary" id="btnSaveQuickLog" style="justify-content: center; width: 100%; padding: 10px;">
+            <span id="saveQuickLogBtnText">儲存微紀錄</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- 右側微紀錄清單區 (歷次定聯時間軸) -->
+      <div class="drawer-split-right">
+        <div class="timeline-section">
+          <div class="timeline-header-bar">
+            <div class="timeline-title-wrap">
+              <h4 class="timeline-title">歷次定聯時間軸</h4>
+              <span class="timeline-count-badge" id="timelineCountBadge">0 筆</span>
+            </div>
+            <button type="button" class="btn btn-secondary" id="btnClearCellTouchpoint" style="font-size: 0.72rem; padding: 2px 8px; color: var(--accent-rose); border-color: rgba(225, 29, 72, 0.3); display: none;" title="清空此客戶在此議題的所有記錄，重設為未互動的「＋」狀態">
+              <span>清空此格 (重設為＋)</span>
+            </button>
+          </div>
+          <div class="timeline-list" id="logTimelineList">
+            <!-- 動態填入歷史紀錄 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ====================================================================
+       5. 議題庫維護管理抽屜 (Topic Manager Drawer)
+       ==================================================================== -->
+  <aside class="slide-drawer" id="topicManagerDrawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="drawer-header-info">
+        <div class="drawer-header-title">議題與子議題順序管理</div>
+        <p class="drawer-subtitle" style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">
+          點擊「↑ 上移 / ↓ 下移」或拖曳卡片即可自訂矩陣欄位順序
+        </p>
+      </div>
+      <button class="drawer-close-btn" id="closeTopicDrawerBtn">&times;</button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- 類別快速篩選標籤列 -->
+      <div class="drawer-category-filter-group" id="tmCategoryFilterGroup" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+        <button class="drawer-cat-chip active" data-cat="ALL">全部</button>
+        <button class="drawer-cat-chip" data-cat="身份接觸">身份接觸</button>
+        <button class="drawer-cat-chip" data-cat="風險管控">風險管控</button>
+        <button class="drawer-cat-chip" data-cat="投資理財">投資理財</button>
+        <button class="drawer-cat-chip" data-cat="稅務傳承">稅務傳承</button>
+        <button class="drawer-cat-chip" data-cat="生活議題">生活議題</button>
+        <button class="drawer-cat-chip" data-cat="組織發展">組織發展</button>
+      </div>
+
+      <!-- 新增子議題折疊區塊 (預設收合，介面聚焦維護與排序) -->
+      <details class="log-form-card" style="margin-bottom: 16px; border: 1px dashed var(--border-subtle);">
+        <summary style="cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); user-select: none; outline: none;">
+          ＋ 展開手動新增新議題（選用）
+        </summary>
+        <form id="newTopicForm" style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">所屬類別 *</label>
+              <select id="newTopicCategory" class="form-control" required>
+                <option value="身份接觸">身份接觸</option>
+                <option value="風險管控" selected>風險管控</option>
+                <option value="投資理財">投資理財</option>
+                <option value="稅務傳承">稅務傳承</option>
+                <option value="生活議題">生活議題</option>
+                <option value="組織發展">組織發展</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1.8;">
+              <label class="form-label">子議題名稱 *</label>
+              <input type="text" id="newTopicTitle" class="form-control" placeholder="例：車險、在宅醫療、月配息" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">UMBC 切入說帖備忘</label>
+            <textarea id="newTopicTips" class="form-control" placeholder="【U】聽得懂【M】切身影響【B】實質好處【C】時間提議..." style="min-height: 55px;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 7px 14px;">
+            <span>確認新增子議題</span>
+          </button>
+        </form>
+      </details>
+
+      <!-- 子議題排序與管理清單 -->
+      <div class="topic-list-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <h4 class="timeline-title" style="margin-bottom: 0;">子議題排序清單</h4>
+          <span id="tmItemCountBadge" style="font-size: 0.72rem; color: var(--text-muted);">共 21 個議題</span>
+        </div>
+        <div class="search-box" style="margin-bottom: 10px; width: 100%; max-width: 100%;">
+          <input type="text" id="topicManagerSearchInput" class="search-input" placeholder="搜尋子議題名稱、說帖關鍵字...">
+        </div>
+        <div id="topicManagerList" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- 動態載入可排序的子議題卡片 -->
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ====================================================================
+       5-1. 彈出對話框 (Modal) - 推進狀況彙總清單 (Status Progress Tracker Modal)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="statusListModal">
+    <div class="modal-card modal-status-list">
+      <div class="modal-header">
+        <div class="header-title-wrapper">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.25rem;">📊</span>
+            <h3 class="modal-title" style="margin: 0;">推進狀況彙總清單</h3>
+            <span class="status-list-total-badge" id="statusListTotalCountBadge">共 0 筆</span>
+          </div>
+          <p class="modal-subtitle" style="font-size: 0.76rem; color: var(--text-muted); margin: 4px 0 0 0;">
+            全局掌握客戶與議題開展狀態，點擊單筆紀錄可立即開啟定聯抽屜維護（一人多議題各自獨立成行）
+          </p>
+        </div>
+        <button type="button" class="drawer-close-btn" id="closeStatusListModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body status-list-modal-body">
+        <!-- 頂部控制列：狀態切換晶片群 + 搜尋過濾 + 客群過濾 -->
+        <div class="status-list-controls">
+          <!-- 推進狀況快速過濾晶片列 (橫向滾動) -->
+          <div class="status-filter-chips-scroll" id="statusModalFilterChips">
+            <!-- 由 JS 動態生成帶筆數的狀態晶片 -->
+          </div>
+
+          <!-- 次級工具列：搜尋 + 客群切換 -->
+          <div class="status-list-subtools">
+            <div class="status-list-search-box">
+              <span class="search-icon" style="font-size: 0.85rem; opacity: 0.6;">🔍</span>
+              <input type="text" id="statusListSearchInput" class="status-list-search-input" placeholder="搜尋客戶姓名、議題名稱、備忘摘要、下一步行動..." autocomplete="off">
+              <button type="button" class="search-clear-mini" id="statusListSearchClearBtn">&times;</button>
+            </div>
+
+            <div class="status-list-client-type-tabs" id="statusListClientTypeTabs">
+              <button type="button" class="type-filter-chip active" data-type="ALL">全部客群</button>
+              <button type="button" class="type-filter-chip" data-type="INDIVIDUAL">👤 個人</button>
+              <button type="button" class="type-filter-chip" data-type="CORPORATE">🏢 企業</button>
+              <button type="button" class="type-filter-chip" data-type="RECRUIT">🤝 準增</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 清單呈現區塊 -->
+        <div class="status-list-container" id="statusListContainer">
+          <!-- 由 JS 動態渲染表格/卡片清單 -->
+        </div>
+      </div>
+
+      <div class="modal-footer status-list-footer">
+        <span class="status-list-summary-hint" id="statusListSummaryHint">顯示 0 筆紀錄</span>
+        <button type="button" class="btn btn-secondary" id="closeStatusListModalFooterBtn">
+          <span>關閉視窗</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       5-2. 彈出對話框 (Modal) - 備忘提醒維護清單 (Reminders Tracker Modal)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="remindersModal">
+    <div class="modal-card modal-status-list modal-reminders-list">
+      <div class="modal-header">
+        <div class="header-title-wrapper">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.25rem;">🔔</span>
+            <h3 class="modal-title" style="margin: 0;">備忘提醒維護清單</h3>
+            <span class="status-list-total-badge" id="remindersModalTotalCountBadge">共 0 筆</span>
+          </div>
+          <p class="modal-subtitle" style="font-size: 0.76rem; color: var(--text-muted); margin: 4px 0 0 0;">
+            全局掌握各客戶與議題設定之待辦任務（誰、要做的事情、什麼時候要完成、完成狀態）
+          </p>
+        </div>
+        <button type="button" class="drawer-close-btn" id="closeRemindersModalBtn" onclick="window.closeRemindersModal && window.closeRemindersModal()">&times;</button>
+      </div>
+
+      <div class="modal-body status-list-modal-body">
+        <!-- 頂部控制列：狀態篩選晶片 + 搜尋過濾 -->
+        <div class="status-list-controls">
+          <div class="status-filter-chips-scroll" id="remindersModalFilterChips">
+            <button type="button" class="type-filter-chip active" data-filter="PENDING">未完成待辦 <span id="filterCountPending">(0)</span></button>
+            <button type="button" class="type-filter-chip" data-filter="TODAY">今日到期 <span id="filterCountToday">(0)</span></button>
+            <button type="button" class="type-filter-chip" data-filter="OVERDUE">已逾期 <span id="filterCountOverdue">(0)</span></button>
+            <button type="button" class="type-filter-chip" data-filter="COMPLETED">已完成 <span id="filterCountCompleted">(0)</span></button>
+            <button type="button" class="type-filter-chip" data-filter="ALL">全部提醒 <span id="filterCountAll">(0)</span></button>
+          </div>
+
+          <div class="status-list-subtools">
+            <div class="status-list-search-box" style="flex: 1;">
+              <span class="search-icon" style="font-size: 0.85rem; opacity: 0.6;">🔍</span>
+              <input type="text" id="remindersSearchInput" class="status-list-search-input" placeholder="搜尋客戶姓名、議題名稱、要做的事情..." autocomplete="off">
+              <button type="button" class="search-clear-mini" id="remindersSearchClearBtn">&times;</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 備忘清單呈現區塊 -->
+        <div class="reminders-table-container" id="remindersTableContainer">
+          <!-- 由 JS 動態渲染表格 -->
+        </div>
+      </div>
+
+      <div class="modal-footer status-list-footer">
+        <span class="status-list-summary-hint" id="remindersListSummaryHint">顯示 0 筆待辦提醒</span>
+        <button type="button" class="btn btn-secondary" onclick="window.closeRemindersModal && window.closeRemindersModal()">
+          <span>關閉視窗</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       6. 彈出對話框 (Modal) - 客戶檔案與性格偏好深度編輯 (足夠大的畫面)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="contactModal">
+    <div class="modal-card modal-large" id="contactModalCard">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="contactModalTitle">編輯客戶檔案與性格偏好</h3>
+          <p style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">
+            首頁第一欄僅呈現姓名與性格，其餘客群屬性、標籤與深度脈絡在此完整維護
+          </p>
+        </div>
+        <button class="drawer-close-btn" id="closeContactModalBtn">&times;</button>
+      </div>
+      <form id="contactForm">
+        <div class="modal-body" style="max-height: 72vh; overflow-y: auto; padding: 20px 24px; gap: 14px;">
+          <input type="hidden" id="editContactId">
+
+          <!-- 區塊一：基本識別 -->
+          <div class="edit-modal-section">
+            <div class="edit-modal-section-header">
+              <h4 class="edit-section-title" style="margin-bottom: 0;">👤 基本資料</h4>
+              <div class="client-header-actions">
+                <!-- 客戶類型歸屬勾選按鈕群（可複選：個人客戶、企業客戶、準增員） -->
+                <div class="client-type-toggle-group">
+                  <button type="button" class="type-checkbox-btn" id="btnToggleTypeIndividual" data-checked="true" title="勾選歸類為【個人客戶】名單">
+                    <span class="type-chk-box">✓</span>
+                    <span class="type-btn-label">👤 個人</span>
+                  </button>
+                  <button type="button" class="type-checkbox-btn" id="btnToggleTypeCorporate" data-checked="false" title="勾選歸類為【企業客戶】名單">
+                    <span class="type-chk-box">✓</span>
+                    <span class="type-btn-label">🏢 企業</span>
+                  </button>
+                  <button type="button" class="type-checkbox-btn" id="btnToggleTypeRecruit" data-checked="false" title="勾選歸類為【準增員】組織發展名單">
+                    <span class="type-chk-box">✓</span>
+                    <span class="type-btn-label">🤝 準增</span>
+                  </button>
+                </div>
+                <button type="button" class="btn-focus-toggle" id="btnToggleFocus" data-checked="false" title="點擊切換加強關注（開啟後此客戶將被標記為 ⭐ 關注，享有專屬快篩與排程提醒）">
+                  <span class="focus-toggle-icon">☆</span>
+                  <span class="focus-toggle-label">關注</span>
+                </button>
+                <button type="button" class="btn-controlled-toggle" id="btnToggleControlled" data-checked="false" title="點擊切換重點列管（開啟後享有最高優先置頂順序，首頁以透明紅色列管徽章標示）">
+                  <span class="controlled-toggle-icon">🚨</span>
+                  <span class="controlled-toggle-label">列管</span>
+                </button>
+                <button type="button" class="btn-veg-toggle" id="btnToggleVegetarian" data-checked="false" title="點擊切換吃素標記（首頁姓名旁將標示綠色正方形『素』字）">
+                  <span class="veg-toggle-checkbox"></span>
+                  <span class="veg-toggle-label">吃素</span>
+                </button>
+              </div>
+            </div>
+            <div class="form-grid-4">
+              <div class="form-group">
+                <label class="form-label" for="contactNameInput">客戶姓名 *</label>
+                <input type="text" id="contactNameInput" class="form-control" placeholder="例：游長霖" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="contactNicknameInput">暱稱／外號</label>
+                <input type="text" id="contactNicknameInput" class="form-control" placeholder="例：霖哥（搜尋專用）" title="純供搜尋輔助匹配，首頁名單不顯示">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="contactCategoryInput">客群屬性</label>
+                <input type="text" id="contactCategoryInput" class="form-control" placeholder="例：公教客群 / 企業主">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="contactPhoneInput">聯絡電話</label>
+                <input type="text" id="contactPhoneInput" class="form-control" placeholder="例：0912-345-678">
+              </div>
+            </div>
+          </div>
+
+          <!-- 區塊二：心理性格畫像 (MBTI 16型直覺秒選 + DISC 雙軌秒選) -->
+          <div class="edit-modal-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 class="edit-section-title" style="margin-bottom: 0;">🧭 性格特質</h4>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">首頁第二行將即時連動顯示</span>
+            </div>
+            
+            <div class="traits-two-col">
+              <!-- 左側：MBTI 4維度二選一 (4x2 矩陣直覺秒選) -->
+              <div class="trait-panel">
+                <div class="trait-panel-header">
+                  <span class="trait-panel-label">MBTI</span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="mbtiSelectedTag" style="font-size: 0.78rem; font-weight: 800; color: var(--cat-invest);"></span>
+                    <button type="button" id="btnClearMbtiBtn" class="btn-text-clear" title="清除 MBTI 選取">清除</button>
+                  </div>
+                </div>
+                <div class="mbti-dim-grid-4x2" id="mbtiDimGrid">
+                  <!-- 維度 1: 能量 (E 外向 / I 內向) -->
+                  <button type="button" class="mbti-dim-btn" data-dim="0" data-val="E">
+                    <span class="mbti-letter">E</span> <span class="mbti-desc">外向</span>
+                  </button>
+                  <button type="button" class="mbti-dim-btn" data-dim="0" data-val="I">
+                    <span class="mbti-letter">I</span> <span class="mbti-desc">內向</span>
+                  </button>
+
+                  <!-- 維度 2: 接收 (S 實感 / N 直覺) -->
+                  <button type="button" class="mbti-dim-btn" data-dim="1" data-val="S">
+                    <span class="mbti-letter">S</span> <span class="mbti-desc">實感</span>
+                  </button>
+                  <button type="button" class="mbti-dim-btn" data-dim="1" data-val="N">
+                    <span class="mbti-letter">N</span> <span class="mbti-desc">直覺</span>
+                  </button>
+
+                  <!-- 維度 3: 決策 (T 思考 / F 情感) -->
+                  <button type="button" class="mbti-dim-btn" data-dim="2" data-val="T">
+                    <span class="mbti-letter">T</span> <span class="mbti-desc">思考</span>
+                  </button>
+                  <button type="button" class="mbti-dim-btn" data-dim="2" data-val="F">
+                    <span class="mbti-letter">F</span> <span class="mbti-desc">情感</span>
+                  </button>
+
+                  <!-- 維度 4: 處事 (J 判斷 / P 感知) -->
+                  <button type="button" class="mbti-dim-btn" data-dim="3" data-val="J">
+                    <span class="mbti-letter">J</span> <span class="mbti-desc">判斷</span>
+                  </button>
+                  <button type="button" class="mbti-dim-btn" data-dim="3" data-val="P">
+                    <span class="mbti-letter">P</span> <span class="mbti-desc">感知</span>
+                  </button>
+                </div>
+                <input type="hidden" id="contactMbtiInput">
+              </div>
+
+              <!-- 右側：DISC 雙軌秒選 (主型 + 輔型) + 即時預覽 -->
+              <div class="trait-panel disc-panel">
+                <!-- DISC主 -->
+                <div class="disc-subgroup">
+                  <div class="trait-panel-header">
+                    <span class="trait-panel-label">DISC主</span>
+                  </div>
+                  <div class="disc-chip-row" id="discPrimaryChips">
+                    <button type="button" class="disc-chip active" data-val="">未設定</button>
+                    <button type="button" class="disc-chip" data-val="D">D</button>
+                    <button type="button" class="disc-chip" data-val="I">I</button>
+                    <button type="button" class="disc-chip" data-val="S">S</button>
+                    <button type="button" class="disc-chip" data-val="C">C</button>
+                    <button type="button" class="disc-chip" data-val="變色龍">變色龍</button>
+                  </div>
+                  <input type="hidden" id="contactDiscPrimaryInput">
+                </div>
+
+                <!-- DISC輔 -->
+                <div class="disc-subgroup">
+                  <div class="trait-panel-header">
+                    <span class="trait-panel-label">DISC輔</span>
+                  </div>
+                  <div class="disc-chip-row" id="discSecondaryChips">
+                    <button type="button" class="disc-chip active" data-val="">無</button>
+                    <button type="button" class="disc-chip" data-val="D">D</button>
+                    <button type="button" class="disc-chip" data-val="I">I</button>
+                    <button type="button" class="disc-chip" data-val="S">S</button>
+                    <button type="button" class="disc-chip" data-val="C">C</button>
+                    <button type="button" class="disc-chip" data-val="變色龍">變色龍</button>
+                  </div>
+                  <input type="hidden" id="contactDiscSecondaryInput">
+                </div>
+
+                <!-- 即時預覽列 -->
+                <div class="trait-live-preview">
+                  <span class="preview-label">首頁預覽：</span>
+                  <div id="traitPreviewBadges" class="preview-badges">
+                    <span class="preview-placeholder">（未設定特質）</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 區塊三：標籤與現況備忘 -->
+          <div class="edit-modal-section">
+            <h4 class="edit-section-title">🏷️ 個人標籤與現況備忘</h4>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" for="contactTagsInput">個人生活與關注標籤 (以逗號隔開)</label>
+              <input type="text" id="contactTagsInput" class="form-control" placeholder="例：公教在職碩士, 減重自律58kg, 心血管家族史">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="contactNotesInput">備註與生活脈絡深度備忘</label>
+              <textarea id="contactNotesInput" class="form-control" placeholder="記錄該客戶的主要生活現況、防線偏好、家族史或未爆彈備忘..." style="min-height: 90px;"></textarea>
+            </div>
+          </div>
+
+          <!-- 區塊四：家庭車庫與車籍資料 (Family Vehicle Fleet) -->
+          <div class="edit-modal-section" id="garageModalSection">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h4 class="edit-section-title" style="margin-bottom: 0;">🚗 家庭車庫與車籍資料</h4>
+                <span id="contactGarageCountBadge" class="garage-count-badge">0 台</span>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnAddNewVehicleToContact" style="font-size: 0.78rem; padding: 4px 10px; display: inline-flex; align-items: center; gap: 4px;">
+                <span>＋ 新增車輛</span>
+              </button>
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0; margin-bottom: 10px;">
+              全家汽機車集中管理。支援「全單一鍵秒抄」與「單欄秒點即複製」，免圈選複製貼上，迅速出險報價。
+            </p>
+            <div id="contactVehicleList" class="vehicle-card-list">
+              <!-- 由 JS 動態渲染車輛清單 -->
+            </div>
+          </div>
+
+          <!-- 區塊五：🎓 準增員學程作息與課表檔案 (Student Schedule & Recruits) -->
+          <div class="edit-modal-section" id="recruitScheduleModalSection">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h4 class="edit-section-title" style="margin-bottom: 0;">🎓 準增員學程作息與課表檔案</h4>
+                <span id="recruitScheduleStatusBadge" class="schedule-status-badge">未設定課表</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnUploadScheduleModal" style="font-size: 0.78rem; padding: 4px 10px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span>📁 上傳課表圖</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnClearScheduleModal" style="display: none; color: var(--accent-rose); border-color: rgba(225, 29, 72, 0.3); font-size: 0.78rem; padding: 4px 10px;">
+                  <span>✕ 移除課表</span>
+                </button>
+              </div>
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0; margin-bottom: 12px;">
+              專為學生增員設計。支援電腦選檔、拖曳，或由 LINE 截圖複製後<strong>直接按 Ctrl+V / Cmd+V 貼上</strong>。永不失效、隨查隨到。
+            </p>
+
+            <div class="schedule-form-row" style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px;">
+              <div class="form-group">
+                <label class="form-label" for="scheduleSemesterInput">目前學期／年級</label>
+                <input type="text" id="scheduleSemesterInput" class="form-control" placeholder="例：115-1 (大三上)">
+              </div>
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <label class="form-label" for="scheduleFreeTimeInput" style="margin-bottom: 0;">黃金空堂時段速記</label>
+                  <div class="quick-free-chips" id="quickFreeChips">
+                    <button type="button" class="chip-add-freetime" data-text="週二下午空堂">週二下午</button>
+                    <button type="button" class="chip-add-freetime" data-text="週五全天沒課">週五沒課</button>
+                    <button type="button" class="chip-add-freetime" data-text="中午可約">中午可約</button>
+                  </div>
+                </div>
+                <input type="text" id="scheduleFreeTimeInput" class="form-control" placeholder="例：週二 14:00 後沒課、週五全天實習">
+              </div>
+            </div>
+
+            <!-- 課表圖片拖曳 / 貼上 / 預覽區 -->
+            <div class="schedule-drop-paste-zone" id="scheduleDropPasteZone" tabindex="0">
+              <input type="file" id="recruitScheduleFileInput" accept="image/*" style="display: none;">
+              <input type="hidden" id="recruitScheduleImageData">
+              
+              <!-- 未上傳狀態的引導框 -->
+              <div id="scheduleEmptyGuide" class="schedule-empty-guide">
+                <span class="guide-icon">📋</span>
+                <div class="guide-texts">
+                  <div class="guide-title">點擊上傳課表，或直接按 <strong>Cmd+V / Ctrl+V</strong> 貼上截圖</div>
+                  <div class="guide-desc">支援 JPG, PNG, WebP。系統自動無損輕量化壓縮，永久雲端同步不失效</div>
+                </div>
+              </div>
+
+              <!-- 已上傳狀態的卡片預覽 -->
+              <div id="schedulePreviewContainer" class="schedule-preview-container" style="display: none;">
+                <div class="schedule-preview-img-wrapper" id="btnZoomSchedulePreview" title="點擊全螢幕放大檢視 (Lightbox)">
+                  <img id="recruitSchedulePreviewImg" src="" alt="課表預覽">
+                  <div class="schedule-zoom-overlay">🔍 點擊全螢幕放大</div>
+                </div>
+                <div class="schedule-preview-meta">
+                  <div class="meta-title" id="scheduleMetaTitle">115-1 (大三上) 課表</div>
+                  <div class="meta-notes" id="scheduleMetaNotes">週二 14:00 後沒課、週五全天實習</div>
+                  <div class="meta-updated" id="scheduleMetaUpdated">最後更新：2026-10-19</div>
+                  <div class="meta-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnReplaceScheduleImg">替換圖片</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnDownloadScheduleImg">下載原圖</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 24px;">
+          <!-- 刪除鍵：明確標記🗑️刪除客戶，具備警示色避免誤觸 -->
+          <button type="button" class="btn btn-secondary btn-del-contact" id="btnDeleteCurrentContact" title="刪除此客戶名單" style="display: none; color: var(--accent-rose); border-color: rgba(225, 29, 72, 0.3); font-size: 0.82rem; padding: 6px 14px;">
+            <span>🗑️ 刪除此客戶</span>
+          </button>
+          <div style="display: flex; gap: 10px; margin-left: auto; align-items: center;">
+            <!-- 取消鍵：明確文字取消，無認知負擔 -->
+            <button type="button" class="btn btn-secondary" id="cancelContactModalBtn" title="取消並放棄修改" style="padding: 6px 16px; font-size: 0.85rem;">
+              <span>取消</span>
+            </button>
+            <!-- 儲存鍵：明確文字確認儲存，高亮主色 -->
+            <button type="submit" class="btn btn-primary" id="saveContactModalBtn" title="確認儲存客戶名單資料" style="padding: 6px 20px; font-size: 0.85rem; font-weight: 700;">
+              <span>✓ 確認儲存</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       7. 彈出對話框 (Modal) - 備份與匯出入
+       ==================================================================== -->
+  <div class="modal-backdrop" id="backupModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">資料備份與匯出入</h3>
+        <button class="drawer-close-btn" id="closeBackupModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5;">
+          系統本機資料皆自動儲存於瀏覽器 LocalStorage。您可在此匯出一鍵 JSON 備份檔，或由其他電腦匯入同步。
+        </p>
+        <div style="display: flex; gap: 10px; margin-top: 6px;">
+          <button class="btn btn-primary" id="btnExportJSON" style="flex: 1; justify-content: center;">
+            <span>匯出完整備份 (JSON)</span>
+          </button>
+          <label class="btn btn-secondary" style="flex: 1; justify-content: center; cursor: pointer;">
+            <span>匯入備份還原</span>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+          </label>
+        </div>
+        <hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 6px 0;">
+        <button class="btn btn-secondary" id="btnResetToDefault" style="color: var(--accent-rose); border-color: rgba(244, 63, 94, 0.3);">
+          <span>重設為初始資料</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       8. 彈出對話框 (Modal) - Google Sheets 雲端同步設定
+       ==================================================================== -->
+  <div class="modal-backdrop" id="syncModal">
+    <div class="modal-card" style="width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Google Sheets 雲端雙向同步設定</h3>
+        <button class="drawer-close-btn" id="closeSyncModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-surface-elevated); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+          <div>
+            <div style="font-weight: 700; font-size: 0.92rem; color: var(--text-main);">啟用 Google Sheets 自動同步</div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary); margin-top: 2px;">新增/編輯定聯微紀錄、名單與議題時，背景即時更新試算表</div>
+          </div>
+          <label class="switch-toggle">
+            <input type="checkbox" id="syncEnableToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="form-group" style="margin-top: 6px;">
+          <label class="form-label" for="syncApiUrlInput" style="display: flex; align-items: center; justify-content: space-between;">
+            <span>Apps Script 網頁應用程式網址 (Web App URL)</span>
+            <a href="Google_Sheet_串接指南.md" target="_blank" style="font-size: 0.74rem; color: var(--accent-indigo); text-decoration: underline;">查看部署教學</a>
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input type="url" id="syncApiUrlInput" class="form-control" value="" placeholder="請貼上您的 Google Apps Script 網頁應用程式網址 (https://script.google.com/macros/s/.../exec)" style="flex: 1;">
+            <button type="button" class="btn btn-secondary" id="btnTestSync" style="padding: 6px 12px; white-space: nowrap;">測試連線</button>
+          </div>
+        </div>
+
+        <div id="syncTestResult" style="display: none; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.8rem; line-height: 1.4;"></div>
+
+        <!-- 一鍵雙向智能同步（首選推薦） -->
+        <button type="button" class="btn btn-primary" id="btnTwoWaySync" style="width: 100%; justify-content: center; padding: 10px 16px; font-weight: 700; font-size: 0.95rem; margin-top: 6px; background: #3b82f6; border-color: #2563eb;">
+          <span>🔄 雙向智能同步 (推薦：先拉取最新 ➔ 自動合併 ➔ 推送上傳)</span>
+        </button>
+
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
+          <button type="button" class="btn btn-secondary" id="btnPushToCloud" style="flex: 1; justify-content: center;" title="將本機資料覆寫推送到 Google Sheets">
+            <span>推送到雲端 (Push)</span>
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnPullFromCloud" style="flex: 1; justify-content: center;" title="自 Google Sheets 拉取最新資料到本機">
+            <span>自雲端拉取 (Pull)</span>
+          </button>
+        </div>
+
+        <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-subtle); padding-top: 12px; margin-top: 6px;">
+          <span>狀態：<strong id="syncStatusText" style="color: var(--text-secondary);">本機離線模式</strong></span>
+          <span id="syncLastTimeText">尚未進行雲端同步</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelSyncModalBtn">關閉</button>
+        <button type="button" class="btn btn-primary" id="saveSyncSettingsBtn">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       8-B. 彈出對話框 (Modal) - 編輯歷次定聯微紀錄 (Edit Timeline Item Modal)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="editTimelineModal" style="z-index: 95;">
+    <div class="modal-card" style="width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="editTimelineModalTitle">✏️ 編輯定聯微紀錄</h3>
+        <button type="button" class="drawer-close-btn" id="closeEditTimelineModalBtn">&times;</button>
+      </div>
+      <form id="editTimelineForm">
+        <input type="hidden" id="editTimelineHistoryIndex">
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px; max-height: 75vh; overflow-y: auto; padding: 18px 20px;">
+          <!-- 會談日期與接觸管道 -->
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label" for="editTimelineDate">會談日期 *</label>
+              <input type="date" id="editTimelineDate" class="form-control" required>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label" for="editTimelineChannel">接觸管道</label>
+              <select id="editTimelineChannel" class="form-control">
+                <option value="LINE">LINE 訊息</option>
+                <option value="電話簡聊">電話簡聊</option>
+                <option value="面對面會談">面對面會談</option>
+                <option value="咖啡隨聊">咖啡隨聊</option>
+                <option value="寄送專屬素材">寄送專屬素材</option>
+                <option value="其他管道">其他管道</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 推進狀態 -->
+          <div class="form-group">
+            <label class="form-label" for="editTimelineStatus">推進狀態</label>
+            <select id="editTimelineStatus" class="form-control">
+              <option value="planned">預計</option>
+              <option value="interaction">互動</option>
+              <option value="pitched">拋出</option>
+              <option value="agreed">同意</option>
+              <option value="appointment">約定</option>
+              <option value="in_progress">洽談</option>
+              <option value="preparing">籌劃</option>
+              <option value="considering">考慮</option>
+              <option value="closed">完成</option>
+              <option value="paused">暫緩</option>
+              <option value="rejected">婉拒</option>
+              <option value="referral">轉介</option>
+            </select>
+          </div>
+
+          <!-- 📅 時程排定與提醒設定 (選填) -->
+          <div class="form-group schedule-time-box" style="margin-bottom: 0;">
+            <div class="schedule-time-header">
+              <span class="schedule-time-title">📅 時程排定與提醒設定 <span class="schedule-time-sub">(選填)</span></span>
+            </div>
+            <div class="schedule-time-grid">
+              <div class="schedule-time-col">
+                <div class="schedule-time-label-row">
+                  <label class="form-label" for="editTimelineRemindClientTime">🔔 提醒對方 (繳交資料等)</label>
+                  <button type="button" class="btn-clear-schedule-time" data-target="editTimelineRemindClientTime" title="清除此時間">✕ 清除</button>
+                </div>
+                <input type="datetime-local" id="editTimelineRemindClientTime" class="form-control schedule-datetime-input">
+              </div>
+              <div class="schedule-time-col">
+                <div class="schedule-time-label-row">
+                  <label class="form-label" for="editTimelineAppointmentTime">🤝 約定見面／交付時間</label>
+                  <button type="button" class="btn-clear-schedule-time" data-target="editTimelineAppointmentTime" title="清除此時間">✕ 清除</button>
+                </div>
+                <input type="datetime-local" id="editTimelineAppointmentTime" class="form-control schedule-datetime-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- 溝通重點與客戶回饋 -->
+          <div class="form-group">
+            <label class="form-label" for="editTimelineSummary">溝通重點與客戶回饋 *</label>
+            <textarea id="editTimelineSummary" class="form-control" rows="3" placeholder="請填寫本次洽談要點、客戶真實想法與回饋..." required></textarea>
+          </div>
+
+          <!-- 下一步跟進動作 -->
+          <div class="form-group">
+            <label class="form-label" for="editTimelineNextAction">下一步跟進動作</label>
+            <input type="text" id="editTimelineNextAction" class="form-control" placeholder="下一步動作備忘（選填）">
+          </div>
+
+          <!-- 逐字稿 / AI 摘要 (選填展開) -->
+          <details class="log-form-card" style="border: 1px dashed var(--border-subtle); padding: 8px 12px; border-radius: var(--radius-sm);">
+            <summary style="cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); user-select: none;">
+              🎙️ 展開編輯會談逐字稿 / AI 深度摘要 (選用)
+            </summary>
+            <div style="margin-top: 8px;">
+              <textarea id="editTimelineTranscript" class="form-control" placeholder="會談錄音逐字稿全文或摘要..." style="min-height: 80px; font-size: 0.78rem; font-family: monospace;"></textarea>
+            </div>
+          </details>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border-subtle);">
+          <button type="button" class="btn btn-secondary" id="cancelEditTimelineBtn" style="padding: 6px 16px; font-size: 0.85rem;">取消</button>
+          <button type="submit" class="btn btn-primary" id="saveEditTimelineBtn" style="padding: 6px 20px; font-size: 0.85rem; font-weight: 700;">確認儲存修改</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       9. 彈出對話框 (Modal) - 單一議題專屬維護 (專屬維護此議題，絕無新增其他議題干擾)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="topicEditModal">
+    <div class="modal-card" style="width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="topicEditModalTitle">維護子議題</h3>
+        <button class="drawer-close-btn" id="closeTopicEditModalBtn">&times;</button>
+      </div>
+      <form id="topicEditForm">
+        <input type="hidden" id="editTopicId">
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="form-row">
+            <div class="form-group" style="flex: 1.2;">
+              <label class="form-label">所屬類別 *</label>
+              <select id="editTopicCategory" class="form-control" required>
+                <option value="身份接觸">身份接觸</option>
+                <option value="風險管控">風險管控</option>
+                <option value="投資理財">投資理財</option>
+                <option value="稅務傳承">稅務傳承</option>
+                <option value="生活議題">生活議題</option>
+                <option value="組織發展">組織發展</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 2;">
+              <label class="form-label">子議題名稱 *</label>
+              <input type="text" id="editTopicTitle" class="form-control" placeholder="例：癌症一次金" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">顯示順序 (序號)</label>
+              <input type="number" id="editTopicOrder" class="form-control" min="1" max="999" placeholder="例：1">
+            </div>
+            <div class="form-group" style="flex: 1.2;">
+              <label class="form-label">使用狀態</label>
+              <select id="editTopicStatus" class="form-control">
+                <option value="ACTIVE">啟用中（顯示於矩陣）</option>
+                <option value="INACTIVE">已停用（暫時隱藏）</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">UMBC 切入說帖備忘</label>
+            <textarea id="editTopicTips" class="form-control" placeholder="【U】聽得懂【M】切身影響【B】實質好處【C】時間提議..." style="min-height: 85px;"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: space-between;">
+          <button type="button" class="btn btn-secondary" id="btnDeleteCurrentTopic" style="color: var(--accent-rose); border-color: rgba(193, 73, 83, 0.35);">
+            刪除此議題
+          </button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary" id="cancelTopicEditModalBtn">取消</button>
+            <button type="submit" class="btn btn-primary">儲存變更</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       10. 彈出對話框 (Modal) - 議題推進看板 (大畫面 6 欄看板清單)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="nextTopicStrategyModal">
+    <div class="modal-card modal-large" style="width: 95vw; max-width: 1260px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); padding: 14px 24px; align-items: center;">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.05rem;">
+          <span>🗺️ 議題推進看板</span>
+          <span id="nextTopicModalClientTag" style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary); margin-left: 6px;"></span>
+        </h3>
+        <button class="drawer-close-btn" id="closeNextTopicModalBtn" title="關閉">&times;</button>
+      </div>
+
+      <!-- 顏色管理狀態圖例說明列（簡潔版，8大推進階段） -->
+      <div class="strategy-legend-bar">
+        <span class="legend-chip" style="background: var(--bg-surface); color: var(--text-main); border: 1.5px solid #7c3aed; font-weight: 700;">點選推進</span>
+        <span class="legend-chip" style="opacity: 0.55; background: rgba(124, 58, 237, 0.12); color: #7c3aed; border: 1px dashed #7c3aed;">🟣 預計</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-interaction-bg); color: var(--status-interaction); border: 1px dashed var(--status-interaction);">🟡 互動</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-pitched-bg); color: var(--status-pitched); border: 1px dashed var(--status-pitched);">🔵 拋出</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-agreed-bg); color: var(--status-agreed); border: 1px dashed var(--status-agreed);">🟢 同意</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-appointment-bg); color: var(--status-appointment); border: 1px dashed var(--status-appointment);">🗓️ 約定</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-progress-bg); color: var(--status-progress); border: 1px dashed var(--status-progress);">🟠 洽談</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-preparing-bg, rgba(99, 102, 241, 0.15)); color: var(--status-preparing, #6366f1); border: 1px dashed var(--status-preparing, #6366f1);">🟣 籌劃</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-considering-bg, rgba(13, 148, 136, 0.15)); color: var(--status-considering, #0d9488); border: 1px dashed var(--status-considering, #0d9488);">💠 考慮</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-closed-bg); color: var(--status-closed); border: 1px dashed var(--status-closed);">🟢 完成</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-paused-bg); color: var(--status-paused); border: 1px dashed var(--status-paused);">⚪️ 暫緩</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-rejected-bg); color: var(--status-rejected); border: 1px dashed var(--status-rejected);">🔴 婉拒</span>
+        <span class="legend-chip" style="opacity: 0.55; background: var(--status-referral-bg); color: var(--status-referral); border: 1px dashed var(--status-referral);">🤝 轉介</span>
+      </div>
+
+      <div class="modal-body" style="padding: 16px 24px; overflow-y: auto; flex: 1;">
+        <!-- 6大分類看板表格清單容器 (由 JS 動態渲染) -->
+        <div id="nextTopicStrategyList" class="strategy-board-grid"></div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 24px;">
+        <button type="button" class="btn btn-secondary" id="cancelNextTopicModalBtn">
+          <span>關閉</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       10-1. 彈出對話框 (Modal) - 工具清單地圖 (全覽無滑動BAR設計)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="toolsMapModal">
+    <div class="modal-card tools-map-modal-card">
+      <div class="modal-header tools-map-modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.05rem; font-weight: 700;">
+          <span>🗺️ 工具清單地圖</span>
+        </h3>
+        <button class="drawer-close-btn" id="closeToolsMapModalBtn" title="關閉">&times;</button>
+      </div>
+
+      <div class="modal-body tools-map-modal-body">
+        <!-- 工具分類網格看板容器 (由 JS 動態渲染) -->
+        <div id="toolsMapGrid" class="tools-map-grid"></div>
+      </div>
+
+      <div class="modal-footer tools-map-modal-footer" style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 24px;">
+        <button type="button" class="btn btn-secondary" id="cancelToolsMapModalBtn">
+          <span>關閉</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       10-2. 彈出對話框 (Modal) - 常用固定訊息庫 (Fixed Messages Modal)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="fixedMessagesModal">
+    <div class="modal-card modal-large fixed-messages-modal-card" id="fixedMessagesModalCard">
+      <div class="modal-header fixed-messages-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.05rem; font-weight: 700;">
+            <span>💬 常用固定訊息庫</span>
+          </h3>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">（點擊任一卡片即可一鍵複製，支援拖曳排序）</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-primary" id="btnAddFixedMsgTop" style="padding: 4px 12px; font-size: 0.8rem; font-weight: 600;">
+            ＋ 新增訊息
+          </button>
+          <button class="drawer-close-btn" id="closeFixedMessagesModalBtn" title="關閉">&times;</button>
+        </div>
+      </div>
+
+      <div class="modal-body fixed-messages-modal-body">
+        <!-- 左側：訊息標題清單 (支援拖曳排序) -->
+        <div class="fixed-msgs-sidebar">
+          <div class="fixed-msgs-sidebar-header">
+            <span class="fixed-msgs-sidebar-title">訊息清單</span>
+            <span class="fixed-msgs-sidebar-count" id="fixedMsgsCountBadge">10 筆</span>
+          </div>
+          <div id="fixed-msgs-list-container" class="fixed-msgs-list-container">
+            <!-- 由 JS 動態生成 -->
+          </div>
+        </div>
+
+        <!-- 右側：內容展示與一鍵複製 / 編輯器 -->
+        <div class="fixed-msgs-main">
+          <!-- 1. 預設空狀態 -->
+          <div id="fixed-msg-detail-empty" class="fixed-msg-empty-state">
+            <div style="font-size: 2.2rem; filter: grayscale(0.5);">📋</div>
+            <span>請點選左側項目以複製內文或進行編輯。</span>
+          </div>
+
+          <!-- 2. 固定訊息詳細內容展示 (含一鍵複製、編輯、刪除按鈕) -->
+          <div id="fixed-msg-detail-content" class="fixed-msg-detail-box" style="display: none;">
+            <div class="fixed-msg-detail-header">
+              <span id="fixed-msg-detail-title" class="fixed-msg-title-text"></span>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" class="btn" id="btn-edit-fixed-msg" style="padding: 5px 12px; font-size: 0.78rem; font-weight: 600; background: rgba(255,255,255,0.08); color: var(--text-main); border: 1px solid var(--border-color); cursor: pointer; border-radius: 6px;">✏️ 編輯</button>
+                <button type="button" class="btn" id="btn-delete-fixed-msg" style="padding: 5px 12px; font-size: 0.78rem; font-weight: 600; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); cursor: pointer; border-radius: 6px;">🗑️ 刪除</button>
+              </div>
+            </div>
+            
+            <div class="fixed-msg-copy-hint">
+              💡 點擊下方卡片區塊即可一鍵複製全部內容：
+            </div>
+
+            <div id="fixed-msg-detail-text" class="fixed-msg-copy-card" title="點選此區塊一鍵複製">
+            </div>
+          </div>
+
+          <!-- 3. 固定訊息編輯器 -->
+          <div id="fixed-msg-editor" class="fixed-msg-editor-box" style="display: none;">
+            <div class="fixed-msg-editor-header">
+              <span id="fixed-msg-editor-title" style="font-size: 1.05rem; font-weight: 700; color: var(--accent);">＋ 新增固定訊息項目</span>
+            </div>
+            <input type="hidden" id="fixed-msg-edit-id">
+            <div style="flex-shrink: 0;">
+              <label class="form-label" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600;">訊息標題 / 簡稱 *</label>
+              <input type="text" id="fixed-msg-input-title" class="form-control" placeholder="例如：開場白 / 保單校正說明" style="width: 100%;">
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+              <label class="form-label" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600;">固定訊息內文 *</label>
+              <textarea id="fixed-msg-input-content" class="form-control" placeholder="輸入常用範本訊息內文..." style="width: 100%; flex: 1; line-height: 1.6; resize: none;"></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border-color); flex-shrink: 0;">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-fixed-msg" style="padding: 6px 14px; font-size: 0.8rem;">取消</button>
+              <button type="button" class="btn btn-primary" id="btn-save-fixed-msg" style="padding: 6px 18px; font-size: 0.8rem; font-weight: 700;">儲存訊息</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       10.2 彈出對話框 (Modal) - 文件列印庫 (Doc Prints Modal)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="docPrintsModal">
+    <div class="modal-card modal-large doc-prints-modal-card" id="docPrintsModalCard">
+      <div class="modal-header doc-prints-modal-header">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <h3 class="modal-title" style="display: flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; font-weight: 700; white-space: nowrap;">
+            <span>📄 文件列印庫</span>
+          </h3>
+          <span class="doc-prints-header-hint" style="font-size: 0.75rem; color: var(--text-muted);">（點選即刻預覽，支援獨立滿版列印 / 另存 PDF）</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-primary" id="btnAddDocPrintTop" style="padding: 4px 12px; font-size: 0.8rem; font-weight: 600;">
+            ＋ 上傳文件
+          </button>
+          <button class="drawer-close-btn" id="closeDocPrintsModalBtn" title="關閉">&times;</button>
+        </div>
+      </div>
+
+      <div class="modal-body doc-prints-modal-body">
+        <!-- 左側：文件標題清單 (支援拖曳排序) -->
+        <div class="doc-prints-sidebar">
+          <div class="doc-prints-sidebar-header">
+            <span class="doc-prints-sidebar-title">文件清單</span>
+            <span class="doc-prints-sidebar-count" id="docPrintsCountBadge">3 筆</span>
+          </div>
+          <div id="doc-prints-list-container" class="doc-prints-list-container">
+            <!-- 由 JS 動態生成 -->
+          </div>
+        </div>
+
+        <!-- 右側：內容展示與列印觸發 / 編輯器 -->
+        <div class="doc-prints-main">
+          <!-- 1. 預設空狀態 -->
+          <div id="doc-print-detail-empty" class="doc-print-empty-state">
+            <div style="font-size: 2.2rem; filter: grayscale(0.5);">📄</div>
+            <span>請點選左側文件以進行預覽與列印。</span>
+          </div>
+
+          <!-- 2. 文件詳細內容與列印控制面板 -->
+          <div id="doc-print-detail-content" class="doc-print-detail-box" style="display: none;">
+            <div class="doc-print-detail-header">
+              <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden;">
+                <span id="doc-print-detail-title" class="doc-print-title-text"></span>
+                <span id="doc-print-detail-desc" style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;"></span>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+                <button type="button" class="btn btn-primary" id="btn-print-doc" style="padding: 5px 14px; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);">
+                  <span>↗️ 獨立頁列印</span>
+                </button>
+                <button type="button" class="btn" id="btn-edit-doc-print" style="padding: 5px 12px; font-size: 0.78rem; font-weight: 600; background: rgba(255,255,255,0.08); color: var(--text-main); border: 1px solid var(--border-color); cursor: pointer; border-radius: 6px;">✏️ 編輯</button>
+                <button type="button" class="btn" id="btn-delete-doc-print" style="padding: 5px 12px; font-size: 0.78rem; font-weight: 600; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); cursor: pointer; border-radius: 6px;">🗑️ 刪除</button>
+              </div>
+            </div>
+
+            <!-- 文件預覽區域 -->
+            <div id="doc-print-detail-preview" class="doc-print-preview-container">
+              <!-- 由 JS 動態注入 img/iframe/text -->
+            </div>
+          </div>
+
+          <!-- 3. 文件上傳/編輯器 -->
+          <div id="doc-print-editor" class="doc-print-editor-box" style="display: none;">
+            <div class="doc-print-editor-header">
+              <span id="doc-print-editor-title" style="font-size: 1.05rem; font-weight: 700; color: var(--accent);">＋ 上傳文件資源</span>
+            </div>
+            <input type="hidden" id="doc-print-edit-id">
+            <div style="flex-shrink: 0;">
+              <label class="form-label" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600;">文件標題 / 名稱 *</label>
+              <input type="text" id="doc-print-input-title" class="form-control" placeholder="例如：投保切結書 / 保單校正授權書" style="width: 100%;">
+            </div>
+            <div style="flex-shrink: 0;">
+              <label class="form-label" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600;">文件備註說明 (選填)</label>
+              <input type="text" id="doc-print-input-desc" class="form-control" placeholder="例如：適用於首次面談客戶填寫..." style="width: 100%;">
+            </div>
+            <div style="flex-shrink: 0;">
+              <label class="form-label" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600;">☁️ 雲端檔案連結 (Google Drive 雲端硬碟共用連結 / 外部 PDF 網址)</label>
+              <input type="url" id="doc-print-input-url" class="form-control" placeholder="https://drive.google.com/file/d/.../view 或外部檔案連結" style="width: 100%;">
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">💡 貼上 Google Drive 連結將自動轉換為免下載即時預覽與 A4 列印模式。</div>
+            </div>
+            <div style="flex-shrink: 0;">
+              <label class="form-label" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600;">📁 或 從電腦上傳檔案 (支援 圖片 / PDF / HTML / 純文字)</label>
+              <input type="file" id="doc-print-input-file" class="form-control" accept="image/*,application/pdf,text/html,text/plain" style="width: 100%; cursor: pointer;">
+              <div id="doc-print-file-hint" style="font-size: 0.72rem; color: #a5b4fc; margin-top: 4px; display: none;">💡 已有已上傳之檔案，若不需更換檔案可維持空白。</div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border-color); flex-shrink: 0; margin-top: auto;">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-doc-print" style="padding: 6px 14px; font-size: 0.8rem;">取消</button>
+              <button type="button" class="btn btn-primary" id="btn-save-doc-print" style="padding: 6px 18px; font-size: 0.8rem; font-weight: 700;">儲存文件</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       11. 彈出對話框 (Modal) - 車籍檔案與產險報價速查 (Vehicle Modal)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="vehicleModal">
+    <div class="modal-card modal-large" id="vehicleModalCard" style="max-width: 760px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h3 class="modal-title" id="vehicleModalTitle">🚗 車籍檔案與報價速查</h3>
+          <span id="vehicleModalClientTag" style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;"></span>
+        </div>
+        <button class="drawer-close-btn" id="closeVehicleModalBtn" title="關閉">&times;</button>
+      </div>
+
+      <!-- 快捷全單複製橫幅 -->
+      <div class="vehicle-quick-copy-bar">
+        <span style="font-size: 0.78rem; color: var(--text-secondary);">出單速抄工具：</span>
+        <button type="button" class="btn btn-primary btn-sm" id="btnCopyVehicleModalFullQuote" style="gap: 5px;">
+          <span>📋 一鍵全單複製 (產險報價標準格式)</span>
+        </button>
+      </div>
+
+      <form id="vehicleForm">
+        <div class="modal-body" style="max-height: 68vh; overflow-y: auto; padding: 16px 24px; gap: 14px;">
+          <input type="hidden" id="editVehicleId">
+          <input type="hidden" id="editVehicleContactId">
+
+          <!-- 區塊一：車籍核心 -->
+          <div class="edit-modal-section">
+            <h4 class="edit-section-title">🚘 車籍核心識別</h4>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehPlateNumber">車牌號碼 *</label>
+                  <button type="button" class="btn-field-copy" data-target="vehPlateNumber" title="複製車牌號碼">複製</button>
+                </div>
+                <input type="text" id="vehPlateNumber" class="form-control" placeholder="例：BLP-8899" required style="font-weight: 700; letter-spacing: 0.5px;">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="vehVehicleType">車種分類</label>
+                <select id="vehVehicleType" class="form-control">
+                  <option value="CAR">自用小客車</option>
+                  <option value="MOTORCYCLE">普通重型機車 (白牌)</option>
+                  <option value="HEAVY_MOTO">大型重型機車 (黃/紅牌)</option>
+                  <option value="TRUCK">自用小貨車</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="vehPassengerCapacity">乘載人數</label>
+                <input type="number" id="vehPassengerCapacity" class="form-control" placeholder="例：5" min="1" max="9" value="5">
+              </div>
+            </div>
+          </div>
+
+          <!-- 區塊二：車主與駕駛人 -->
+          <div class="edit-modal-section">
+            <h4 class="edit-section-title">👤 車主與主要駕駛人（年齡與費率係數）</h4>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehOwnerName">名義車主姓名 *</label>
+                  <button type="button" class="btn-field-copy" data-target="vehOwnerName" title="複製車主姓名">複製</button>
+                </div>
+                <input type="text" id="vehOwnerName" class="form-control" placeholder="例：林建宏" required>
+              </div>
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehOwnerIdNumber">身分證字號 / 統編 *</label>
+                  <button type="button" class="btn-field-copy" data-target="vehOwnerIdNumber" title="複製身分證字號">複製</button>
+                </div>
+                <input type="text" id="vehOwnerIdNumber" class="form-control" placeholder="例：A120988776" required style="font-family: monospace; letter-spacing: 0.5px;">
+              </div>
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehOwnerBirthDate">車主出生年月日</label>
+                  <button type="button" class="btn-field-copy" data-target="vehOwnerBirthDate" title="複製出生年月日">複製</button>
+                </div>
+                <input type="date" id="vehOwnerBirthDate" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-grid-3" style="margin-top: 10px;">
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehPrimaryDriver">主要駕駛人</label>
+                  <button type="button" class="btn-field-copy" data-target="vehPrimaryDriver" title="複製駕駛人姓名">複製</button>
+                </div>
+                <input type="text" id="vehPrimaryDriver" class="form-control" placeholder="例：王美鳳">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="vehPrimaryDriverRelation">主要駕駛人關係</label>
+                <select id="vehPrimaryDriverRelation" class="form-control">
+                  <option value="本人">本人</option>
+                  <option value="配偶">配偶</option>
+                  <option value="子女">子女</option>
+                  <option value="父母">父母</option>
+                  <option value="兄弟姊妹">兄弟姊妹</option>
+                  <option value="員工">員工 / 司機</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="vehInsuranceExpiryDate">目前車險到期日</label>
+                <input type="date" id="vehInsuranceExpiryDate" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          <!-- 區塊三：車輛規格 -->
+          <div class="edit-modal-section">
+            <h4 class="edit-section-title">⚙️ 廠牌型式與動力規格</h4>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label class="form-label" for="vehBrand">廠牌</label>
+                <input type="text" id="vehBrand" class="form-control" placeholder="例：LEXUS 凌志">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="vehModelType">車型式樣</label>
+                <input type="text" id="vehModelType" class="form-control" placeholder="例：RX350 / GLA 200">
+              </div>
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehDisplacement">排氣量 (c.c.)</label>
+                  <button type="button" class="btn-field-copy" data-target="vehDisplacement" title="複製排氣量">複製</button>
+                </div>
+                <input type="text" id="vehDisplacement" class="form-control" placeholder="例：2393">
+              </div>
+            </div>
+
+            <div class="form-grid-2" style="margin-top: 10px;">
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehEngineNumber">引擎號碼</label>
+                  <button type="button" class="btn-field-copy" data-target="vehEngineNumber" title="複製引擎號碼">複製</button>
+                </div>
+                <input type="text" id="vehEngineNumber" class="form-control" placeholder="例：T24A-099821" style="font-family: monospace;">
+              </div>
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehVinNumber">車身號碼 (VIN)</label>
+                  <button type="button" class="btn-field-copy" data-target="vehVinNumber" title="複製車身號碼">複製</button>
+                </div>
+                <input type="text" id="vehVinNumber" class="form-control" placeholder="例：JTJBDCA88P2099182" style="font-family: monospace;">
+              </div>
+            </div>
+
+            <div class="form-grid-2" style="margin-top: 10px;">
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehManufactureDate">出廠年月 (YYYY-MM)</label>
+                  <button type="button" class="btn-field-copy" data-target="vehManufactureDate" title="複製出廠年月">複製</button>
+                </div>
+                <input type="text" id="vehManufactureDate" class="form-control" placeholder="例：2023-03">
+              </div>
+              <div class="form-group">
+                <div class="field-label-row">
+                  <label class="form-label" for="vehIssueDate">發照日期 (YYYY-MM-DD)</label>
+                  <button type="button" class="btn-field-copy" data-target="vehIssueDate" title="複製發照日期">複製</button>
+                </div>
+                <input type="text" id="vehIssueDate" class="form-control" placeholder="例：2023-04-10">
+              </div>
+            </div>
+          </div>
+
+          <!-- 區塊四：行照圖片存檔與預覽 -->
+          <div class="edit-modal-section">
+            <h4 class="edit-section-title">📄 行照影像存檔 (支援雲端原圖與本地上傳)</h4>
+            <div style="display: flex; gap: 14px; align-items: flex-start;">
+              <!-- 縮圖預覽 box -->
+              <div class="license-preview-box" id="vehLicensePreviewContainer" title="點擊放大檢視行照">
+                <div id="vehLicensePreviewPlaceholder" class="license-placeholder">
+                  <span style="font-size: 1.8rem;">📄</span>
+                  <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">無行照照片</span>
+                </div>
+                <img id="vehLicensePreviewImg" src="" alt="行照預覽" style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+              </div>
+
+              <!-- 上傳與路徑輸入 -->
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                <div class="form-group">
+                  <label class="form-label" for="vehLicenseFileInput">從本機選擇行照圖片上傳</label>
+                  <input type="file" id="vehLicenseFileInput" class="form-control" accept="image/*" style="font-size: 0.8rem; padding: 6px;">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="vehLicenseImageInput">或貼上雲端存檔路徑 / 網址</label>
+                  <input type="text" id="vehLicenseImageInput" class="form-control" placeholder="例：data/vehicles/licenses/2026-10-04_行照_林建宏_BLP-8899_LEXUS-RX350.jpg">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 區塊五：目前投保險種、代號與保額明細 (客戶隨身速查) -->
+          <div class="edit-modal-section">
+            <h4 class="edit-section-title">🛡️ 目前投保險種、代號與保額明細 (客戶隨身速查)</h4>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label class="form-label" for="vehInsuranceCompany">承保產險公司</label>
+                <input type="text" id="vehInsuranceCompany" class="form-control" placeholder="例：富邦產物保險 / 國泰世紀產險">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="vehPolicyNumber">保單 / 報價單號</label>
+                <input type="text" id="vehPolicyNumber" class="form-control" placeholder="例：0426KAQ0540520">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="vehPremiumTotal">總保費金額 (元)</label>
+                <input type="number" id="vehPremiumTotal" class="form-control" placeholder="例：2138">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+              <label class="form-label" for="vehCoveragesInput">
+                險種代號與保額清單 (格式：險種代號 險種名稱 保額 自負額，每行一項)
+              </label>
+              <textarea id="vehCoveragesInput" class="form-control" placeholder="例：&#10;3B27 慰問金保險 每人身故5萬/事故5萬 無&#10;3B31 第三人傷害責任險 每人體傷200萬/事故400萬 無&#10;3B32 第三人財損責任險 每一事故財損50萬 無" style="min-height: 80px; font-family: monospace; font-size: 0.8rem;"></textarea>
+            </div>
+          </div>
+
+          <!-- 區塊六：規劃需求與特約備忘 -->
+          <div class="edit-modal-section">
+            <h4 class="edit-section-title">📝 車險規劃需求與特約備忘</h4>
+            <div class="form-group">
+              <textarea id="vehNotesInput" class="form-control" placeholder="例：車體乙式免自負額、超額責任險2000萬、約定駕駛人、附加乘客體傷及慰問金..." style="min-height: 70px;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 24px;">
+          <!-- 刪除車輛按鈕 -->
+          <button type="button" class="btn btn-secondary btn-del-vehicle" id="btnDeleteCurrentVehicle" title="刪除此車輛" style="display: none; color: var(--accent-rose); border-color: rgba(225, 29, 72, 0.3); font-size: 0.82rem; padding: 6px 14px;">
+            <span>🗑️ 刪除此車</span>
+          </button>
+          <div style="display: flex; gap: 10px; margin-left: auto; align-items: center;">
+            <button type="button" class="btn btn-secondary" id="cancelVehicleModalBtn" title="取消放棄編輯" style="padding: 6px 16px; font-size: 0.85rem;">
+              <span>取消</span>
+            </button>
+            <button type="submit" class="btn btn-primary" id="saveVehicleModalBtn" title="確認儲存車籍資料" style="padding: 6px 20px; font-size: 0.85rem; font-weight: 700;">
+              <span>✓ 確認儲存</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       12. 行照照片燈箱全螢幕預覽 (Lightbox Modal)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="licenseLightboxModal" style="z-index: 10000;">
+    <div class="modal-card" style="max-width: 90vw; max-height: 92vh; padding: 14px; background: rgba(20, 22, 26, 0.95); border: 1px solid rgba(255,255,255,0.15); display: flex; flex-direction: column; align-items: center;">
+      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #fff;">
+        <span id="lightboxTitle" style="font-size: 0.95rem; font-weight: 700; color: #f3f4f6;">📄 行照原始檔案預覽</span>
+        <button type="button" class="drawer-close-btn" id="closeLightboxBtn" style="color: #fff; font-size: 1.4rem;">&times;</button>
+      </div>
+      <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; max-height: 80vh; width: 100%;">
+        <img id="lightboxImg" src="" alt="行照放大圖" style="max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       13. 本週推進成就感戰報彈窗 (Weekly Pulse Achievement Modal)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="weeklyPulseModal">
+    <div class="modal-card weekly-pulse-card landscape-pulse-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span style="font-size: 1.25rem;">🏆</span>
+          <span style="font-weight: 800; font-size: 1.15rem;">本週微步戰報與關係足跡</span>
+          <span class="landscape-header-sub">（看見每天的推進足跡，為大腦補足正向動能）</span>
+        </div>
+        <button type="button" class="drawer-close-btn" id="closeWeeklyPulseModalBtn" onclick="window.closeWeeklyPulseModal && window.closeWeeklyPulseModal()">&times;</button>
+      </div>
+      <div class="modal-body pulse-modal-body-landscape" style="padding: 16px 24px 20px;">
+        <!-- 成就感金句條 (ADHD Positive Reinforcement) - 橫幅頂置舒展 -->
+        <div class="pulse-affirmation-banner">
+          <span class="affirmation-icon">✨</span>
+          <span class="affirmation-text" id="pulseAffirmationText">每一個細小的紀錄，都在讓客戶關係實質向前推進！</span>
+        </div>
+
+        <!-- 橫版雙欄核心儀表板架構 (左側：數據概覽與7天趨勢圖；右側：今日名單動態足跡) -->
+        <div class="pulse-landscape-grid">
+          <!-- 左欄：動能與趨勢圖 -->
+          <div class="pulse-col-left">
+            <!-- 數據對比概覽格 -->
+            <div class="pulse-overview-grid">
+              <div class="pulse-stat-box today-box">
+                <div class="stat-box-header">
+                  <span class="stat-box-title">🔥 今日累積</span>
+                  <span class="stat-box-tag">微步進行中</span>
+                </div>
+                <span class="stat-box-value" id="pulseModalTodayTotal">0</span>
+                <div class="stat-box-sub">
+                  <span>👤 新增 <strong id="pulseModalTodayNew">0</strong></span>
+                  <span class="sub-dot">•</span>
+                  <span>🚀 推進 <strong id="pulseModalTodayProgress">0</strong></span>
+                </div>
+              </div>
+              <div class="pulse-stat-box week-box">
+                <div class="stat-box-header">
+                  <span class="stat-box-title">📅 本週累積</span>
+                  <span class="stat-box-tag week-tag">持續累積</span>
+                </div>
+                <span class="stat-box-value" id="pulseModalWeekTotal">0</span>
+                <div class="stat-box-sub">
+                  <span>👤 新增 <strong id="pulseModalWeekNew">0</strong></span>
+                  <span class="sub-dot">•</span>
+                  <span>🚀 推進 <strong id="pulseModalWeekProgress">0</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 本週動能節奏趨勢圖 (Weekly Spark Trend - 橫寬舒展) -->
+            <div class="weekly-spark-trend-card">
+              <div class="trend-card-header">
+                <div class="trend-header-left">
+                  <span class="trend-title">📈 本週動能節奏圖</span>
+                  <span class="trend-subtitle">（7 天連續足跡）</span>
+                </div>
+                <div class="trend-badge-pill" id="trendActiveDaysBadge">本週活躍 0 天</div>
+              </div>
+
+              <!-- 視覺化趨勢圖柱狀容器 (寬裕均勻分佈) -->
+              <div class="spark-bars-container" id="sparkBarsContainer">
+                <!-- 動態注入週一到週日的 7 根長條與進度 -->
+              </div>
+
+              <!-- 激勵狀態小語 -->
+              <div class="trend-motivation-footer" id="trendMotivationFooter">
+                <span class="spark-dot-indicator"></span>
+                <span id="trendMotivationText">今天有動，就是進度！</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右欄：今日動態紀錄列表 (自適應等高卡片) -->
+          <div class="pulse-col-right">
+            <div class="pulse-activity-section">
+              <div class="activity-section-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.95rem;">🌱</span>
+                  <span style="font-weight: 700; color: var(--text-main); font-size: 0.88rem;">今日名單動態足跡</span>
+                </div>
+                <span class="activity-section-badge" id="pulseActiveClientCount">0 位客戶</span>
+              </div>
+              <div class="pulse-activity-list" id="pulseTodayActivityList">
+                <!-- 動態注入今日更新記錄 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; border-top: 1px solid var(--border-subtle); background: var(--bg-surface);">
+        <span style="font-size: 0.74rem; color: var(--text-muted);">💡 提示：無須任何數字目標壓力，只要點開名單或議題更新一句話，就自動記入足跡</span>
+        <button type="button" class="btn btn-secondary" id="btnCloseWeeklyPulseBtnBottom" onclick="window.closeWeeklyPulseModal && window.closeWeeklyPulseModal()" style="padding: 6px 20px;">
+          <span>關閉戰報</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       14. 工作日誌管理彈窗 (Work Log Modal - Master-Detail 左清單 / 右編輯)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="workLogModal">
+    <div class="modal-card work-log-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span style="font-size: 1.25rem;">📝</span>
+          <span style="font-weight: 800; font-size: 1.15rem;">工作日誌速記</span>
+          <span class="landscape-header-sub">（左側歷史日誌清單 / 右側快速編輯主旨與內容）</span>
+        </div>
+        <button type="button" class="drawer-close-btn" id="closeWorkLogModalBtn" onclick="window.closeWorkLogModal && window.closeWorkLogModal()">&times;</button>
+      </div>
+
+      <div class="modal-body work-log-modal-body">
+        <!-- 左欄：日誌歷史清單 -->
+        <div class="work-log-sidebar">
+          <div class="work-log-sidebar-toolbar">
+            <button type="button" class="btn btn-primary btn-sm btn-new-log" id="btnCreateNewWorkLog">
+              <span>＋ 新增日誌</span>
+            </button>
+            <div class="work-log-search-box">
+              <input type="text" id="workLogSearchInput" placeholder="搜尋主旨或內容..." class="search-input">
+            </div>
+          </div>
+          <div class="work-log-list-container" id="workLogListContainer">
+            <!-- 動態渲染日誌項目卡片 -->
+          </div>
+        </div>
+
+        <!-- 右欄：編輯工作區 -->
+        <div class="work-log-editor-panel">
+          <div class="work-log-editor-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="editor-mode-badge" id="workLogEditorBadge">✨ 新增日誌</span>
+              <span class="editor-time-hint" id="workLogTimeHint"></span>
+            </div>
+            <button type="button" class="btn btn-danger-ghost btn-sm" id="btnDeleteCurrentWorkLog" style="display: none;">
+              <span>🗑️ 刪除</span>
+            </button>
+          </div>
+
+          <form id="workLogForm" class="work-log-form" onsubmit="return false;">
+            <input type="hidden" id="workLogEditId" value="">
+
+            <div class="form-row-grid">
+              <div class="form-group flex-1">
+                <div class="form-label-row">
+                  <label class="form-label" for="workLogDate">📅 日期</label>
+                  <button type="button" class="btn-text-quick-today" id="btnSetWorkLogToday">今天</button>
+                </div>
+                <input type="date" id="workLogDate" class="form-input" required>
+              </div>
+              <div class="form-group flex-2">
+                <label class="form-label" for="workLogSubject">📌 主旨 / 重點標題</label>
+                <input type="text" id="workLogSubject" class="form-input" placeholder="例如：拜訪張董保單覆盤、規劃家庭信託架構" required autocomplete="off">
+              </div>
+            </div>
+
+            <div class="form-group form-group-textarea">
+              <div class="form-label-row">
+                <label class="form-label" for="workLogContent">📄 日誌內容 / 洽談要點備忘</label>
+                <span class="content-length-counter" id="workLogCharCount">0 字</span>
+              </div>
+              <textarea id="workLogContent" class="form-textarea work-log-textarea" placeholder="在此快速記錄今日的工作進展、談話亮點、客戶抗拒點覆盤、或明日待辦微步..."></textarea>
+            </div>
+
+            <div class="work-log-editor-actions">
+              <button type="button" class="btn btn-secondary" id="btnResetWorkLogForm">
+                <span>清空重填</span>
+              </button>
+              <button type="button" class="btn btn-primary" id="btnSaveWorkLog">
+                <span>💾 儲存日誌</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       16. 學生課表全螢幕高解析燈箱 (Student Schedule Lightbox Modal)
+       ==================================================================== -->
+  <div class="modal-backdrop schedule-lightbox-backdrop" id="scheduleLightboxModal" style="z-index: 99999;">
+    <div class="schedule-lightbox-card">
+      <div class="schedule-lightbox-header">
+        <div class="lightbox-title-box">
+          <span style="font-size: 1.25rem;">🎓</span>
+          <h3 class="lightbox-title" id="lightboxStudentName">學生每週作息課表</h3>
+          <span class="lightbox-semester-badge" id="lightboxSemesterBadge">115-1</span>
+        </div>
+        <div class="lightbox-header-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnLightboxDownload" style="font-size: 0.78rem; padding: 4px 10px;">
+            <span>📥 下載課表</span>
+          </button>
+          <button type="button" class="drawer-close-btn" id="closeScheduleLightboxBtn" title="關閉 (Esc)">&times;</button>
+        </div>
+      </div>
+      <!-- 黃金空堂摘要導航條 -->
+      <div class="lightbox-freetime-banner" id="lightboxFreeTimeBanner">
+        <span class="freetime-icon">💡</span>
+        <span class="freetime-label">黃金空堂時段：</span>
+        <span class="freetime-text" id="lightboxFreeTimeText">未設定空堂速記</span>
+      </div>
+      <!-- 高解析圖片檢視區 (支援滾輪縮放與拖曳) -->
+      <div class="schedule-lightbox-viewport" id="scheduleLightboxViewport">
+        <img id="scheduleLightboxImg" src="" alt="學生課表">
+      </div>
+      <div class="schedule-lightbox-footer">
+        <div class="zoom-controls">
+          <button type="button" class="btn-zoom" id="btnZoomOut" title="縮小 (－)">－</button>
+          <button type="button" class="btn-zoom" id="btnZoomReset" title="重設 (100%)">100%</button>
+          <button type="button" class="btn-zoom" id="btnZoomIn" title="放大 (＋)">＋</button>
+        </div>
+        <span class="lightbox-hint">支援滑鼠滾輪縮放與拖曳平移，按 Esc 關閉</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 吐司通知容器 -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- 模組化核心邏輯控制器 -->
+  <script src="js/doc_prints_data.js?v=20261024_231_checkpoints_passed"></script>
+  <script src="js/constants.js?v=20261024_231_checkpoints_passed"></script>
+  <script src="js/state.js?v=20261024_231_checkpoints_passed"></script>
+  <script src="js/renderer.js?v=20261024_231_checkpoints_passed"></script>
+  <script src="js/modals.js?v=20261024_231_checkpoints_passed"></script>
+  <script src="js/events.js?v=20261024_231_checkpoints_passed"></script>
+  <script src="app.js?v=20261024_231_checkpoints_passed"></script>
+</body>
+</html>

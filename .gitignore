@@ -1,0 +1,53 @@
+# =============================================================================
+# 敏感資料與個人隱私 (Confidential & Private Client Data)
+# =============================================================================
+# 1. Google 試算表與實體資料
+定聯與議題.gsheet
+*.gsheet
+*.gdoc
+
+# 2. 語音逐字稿與訪談紀錄
+語音逐字稿/
+*.m4a
+*.mp3
+*.wav
+
+# 3. 客戶資料庫、實戰情報與證件翻拍
+data/
+*.bak
+*.backup.*
+doc_prints_backup.json
+fixed_messages_backup.json
+app.backup.js
+
+# 4. 包含真實個資之畫面截圖與圖片
+actual_page*.png
+screenshot_*.png
+*.png
+*.jpg
+*.jpeg
+*.webp
+!favicon.*
+
+# =============================================================================
+# 金鑰、環境變數與認證憑證 (Secrets & Credentials)
+# =============================================================================
+.env
+.env.*
+.clasp.json
+.clasprc.json
+appsscript.json
+reply_oracle.py
+
+# =============================================================================
+# 系統快取與暫存檔 (System Caches & Dependencies)
+# =============================================================================
+.DS_Store
+Thumbs.db
+node_modules/
+npm-debug.log*
+.bitwar/
+.Trash/
+.claude/
+.cursor/
+.kiro/

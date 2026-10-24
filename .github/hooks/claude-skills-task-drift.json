@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "powershell": "$body = [Console]::In.ReadToEnd(); try { Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:63539/hook/task-drift?agent=copilot&cwd=%2FUsers%2Foyang%2FLibrary%2FCloudStorage%2FGoogleDrive-abracaoyang%40gmail.com%2F%E6%88%91%E7%9A%84%E9%9B%B2%E7%AB%AF%E7%A1%AC%E7%A2%9F%2FIDE%2F%E5%85%A5%E5%8F%A3%E5%B0%88%E6%A1%88%2F%E5%BB%BA%E6%A7%8B%E4%B8%AD%E5%B0%88%E6%A1%88%2F%E3%80%9005%E6%A1%88%E4%BB%B6%E7%AE%A1%E7%90%86%E3%80%91%EF%BD%9C%E5%AE%9A%E8%81%AF%E8%88%87%E8%AD%B0%E9%A1%8C%E7%B4%80%E9%8C%84%E7%B3%BB%E7%B5%B1' -Method POST -Headers @{ 'Content-Type' = 'application/json' } -Body $body | Out-Null } catch { }",
+        "timeoutSec": 8
+      }
+    ],
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "powershell": "$body = [Console]::In.ReadToEnd(); try { Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:63539/hook/task-drift?agent=copilot&cwd=%2FUsers%2Foyang%2FLibrary%2FCloudStorage%2FGoogleDrive-abracaoyang%40gmail.com%2F%E6%88%91%E7%9A%84%E9%9B%B2%E7%AB%AF%E7%A1%AC%E7%A2%9F%2FIDE%2F%E5%85%A5%E5%8F%A3%E5%B0%88%E6%A1%88%2F%E5%BB%BA%E6%A7%8B%E4%B8%AD%E5%B0%88%E6%A1%88%2F%E3%80%9005%E6%A1%88%E4%BB%B6%E7%AE%A1%E7%90%86%E3%80%91%EF%BD%9C%E5%AE%9A%E8%81%AF%E8%88%87%E8%AD%B0%E9%A1%8C%E7%B4%80%E9%8C%84%E7%B3%BB%E7%B5%B1' -Method POST -Headers @{ 'Content-Type' = 'application/json' } -Body $body | Out-Null } catch { }",
+        "timeoutSec": 8
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "case-management-crm",
+  "version": "1.0.0",
+  "description": "定聯 x 議題 x 案件｜紀錄管理系統",
+  "scripts": {
+    "test": "node test-suite.js",
+    "test:bdd": "node bdd-runner.js",
+    "test:all": "node test-suite.js && node bdd-runner.js",
+    "check": "node --check js/constants.js && node --check js/state.js && node --check js/renderer.js && node --check js/modals.js && node --check js/events.js && node --check 程式碼.js"
+  },
+  "keywords": [
+    "crm",
+    "touchpoint",
+    "regular-contact",
+    "case-tracking"
+  ],
+  "author": "Antigravity Executive Director",
+  "license": "ISC"
+}
