@@ -6,7 +6,8 @@
     "test": "node test-suite.js",
     "test:bdd": "node bdd-runner.js",
     "test:all": "node test-suite.js && node bdd-runner.js",
-    "check": "node --check js/constants.js && node --check js/state.js && node --check js/renderer.js && node --check js/modals.js && node --check js/events.js && node --check 程式碼.js"
+    "check": "node --check js/constants.js && node --check js/state.js && node --check js/renderer.js && node --check js/modals.js && node --check js/events.js && node --check 程式碼.js",
+    "release": "node scripts/release.js"
   },
   "keywords": [
     "crm",
